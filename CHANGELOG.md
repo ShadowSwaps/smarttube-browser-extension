@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Established isolated headless Brave as the default review route so routine tests do not use the human's desktop input; reverified all 15 fixture checks on that route.
 - Recorded normal-profile Brave UI checks for controls, persistence and navigation; retained an unresolved default-speed failure after video reload.
 - Added project guidance for bounded work, one checkout owner, usage-aware checkpoints, evidence-based validation reuse and explicit review methods.
 - Distinguished disposable browser tests, live-site checks and the requested normal-profile installation acceptance.

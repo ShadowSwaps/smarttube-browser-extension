@@ -16,6 +16,8 @@ The tested behaviors are content-script attachment, no default SponsorBlock requ
 
 Screenshots and a machine-readable result are generated locally under `test-results` and excluded from Git. A real-browser fixture test establishes the tested integration, not service-wide YouTube compatibility.
 
+On 17 October 2026, `node scripts/browser-test.mjs` was rerun with the existing bundled Playwright runtime to verify the background review route. The installed Brave executable ran with `headless:true` in its own disposable profile; all 15 outcomes passed, including restart persistence, without native desktop input. Codex performed self-review of the generated popup and player screenshots. Earlier output files were copied to a timestamped local archive before the run. This used the unchanged extension candidate and controlled fixtures, with no other player extension installed in that test profile; it does not reproduce or resolve the normal-profile speed failure below.
+
 ## Public service checks
 
 A signed-out live Brave smoke check opened the public Big Buck Bunny video `aqz-KE-bpKQ`, rejected optional cookies when prompted, and verified toolbar seeking by at least nine seconds, a playback rate change to 1.25×, and a native play/pause state change. The native media element reported ready state 4 and duration 634.601 seconds, with no media error, page errors, or control errors in the final check. Earlier attempts exposed consent timing and native-control integration issues; the final adapter and harness were corrected before this result. The optional `scripts/live-smoke.mjs` script records current results rather than assuming historical results still apply.

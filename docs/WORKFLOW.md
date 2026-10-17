@@ -33,6 +33,16 @@ Use short checkpoints with source/evidence links and exact remaining work. Fresh
 
 ## Current normal-profile acceptance
 
+### Default review environment
+
+Routine testing and visual review use the installed Brave executable headlessly through Playwright, in an isolated workspace profile. This avoids desktop mouse/keyboard input and lets the human continue using their computer. `scripts/browser-test.mjs` uses controlled fixtures; `scripts/live-smoke.mjs` uses a public, signed-out live video. Both already use disposable profiles under `.local`; screenshots and reports go under ignored `test-results`. Preserve prior evidence before a rerun that overwrites those output names. Close only browser contexts owned by the test.
+
+The isolated fixture route was exercised again on 17 October 2026 for this background-review requirement: all 15 checks passed, including a restart of its own browser process. Native desktop automation was not used in that run. This does not resolve the normal-profile saved-speed failure.
+
+A separate visible Brave window shares the Windows desktop and can still interrupt input. Headless review is the default; use the human's normal profile only for explicitly requested acceptance scenarios. Existing headless test profiles do not contain their other extensions or account. A future representative compatibility profile should install only selected public test extensions and reproduce explicit settings, without copying personal browser data. Its setup and compatibility are not established by the clean fixture pass.
+
+### Existing normal-profile result
+
 The developer preview has historical disposable-Brave and signed-out live-site evidence in VALIDATION.md. User-authorized installation and normal-profile UI checks were subsequently performed on 17 October 2026. Installation and the tested controls, persistence and navigation scenarios passed, while a saved-speed override after video reload failed. Normal-profile acceptance is partial; see [the scenario report](validation/normal-brave-2026-10-17.md). Earlier fixture results do not supersede this observed failure.
 
 The normal-profile check should establish installation/enabled state, toolbar and popup operation, play/pause/seek/speed, settings and queue persistence, navigation behavior, existing Shields/extension interactions and any opt-in sponsor behavior actually exercised. Preserve existing protections and account state. Do not restart the human's whole browser without agreement; a full normal-profile process-restart check can remain unrun while other checks proceed.
