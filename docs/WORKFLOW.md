@@ -4,7 +4,18 @@ Adopted for SmartTube Browser on 17 October 2026 at the human's request. These p
 
 ## Coordinator and task ownership
 
-Every task-chat checkpoint and final reply must give an explicit human destination: **STAY IN THIS TASK CHAT** for requested input/tests or active scoped repairs, or **RETURN TO SMARTTUBE COORDINATOR** for review, scope decisions, closure or next-task selection. Explain why, state the next human action/input or **No action needed**, and identify the responsible owner and return condition. An intermediate review handoff can return the human to the coordinator while the task retains repairs and pending gates. Routing alone changes no ownership, acceptance, completion or archive status.
+### Task status and human routing
+
+Lead every task-chat checkpoint and final reply with a truthful status and concrete outcome, then brief verification, limits and evidence links as relevant. Finish with a natural sentence saying whether to stay in this task chat or return to **SmartTube Coordinator**, why, the human action/input needed or that no action is needed, the responsible owner and return condition. Use sentence case; bold a key status or destination when useful.
+
+Use Completed only when all scoped obligations and mandatory gates, including required checks and review, are resolved. Ready for review is intermediate and retains ownership and pending gates. Still working means actual authorized remaining work; it cannot override a stop. Checkpointed means stopped and unaccepted; an exhausted budget requires explicit human authorization for further bounded work and review allowance. Human routing alone changes no ownership, acceptance, completion, idle confirmation or archive permission.
+
+- **Completed:** “[Task] is implemented and verified; required tests and review passed, and the final handoff is saved. Return to **SmartTube Coordinator** for final closure and next-task decisions. No further action is needed in this chat. This chat stays open until the coordinator verifies completion and idle status for any authorized archive.”
+- **Still working:** “[Finished result] is ready; [specific authorized work] remains. Stay in this task chat while I finish [checks/repairs]. No action is needed from you right now. I’ll tell you when to return to **SmartTube Coordinator**.” If human input is required, replace the no-action sentence with that specific request.
+- **Ready for review:** “The candidate and evidence are ready; required review is pending. Return to **SmartTube Coordinator** for review/status. No action is needed in this task chat while review runs. I retain scoped repairs and will resume only for authorized findings or required input.”
+- **Checkpointed:** “[Blocker/stop] remains; the task is not accepted. Return to **SmartTube Coordinator** for your decision on leaving it checkpointed or explicitly authorizing further bounded work. This task chat stays open, with repairs stopped and ownership retained.”
+
+An intermediate review handoff can return the human to the coordinator while the task retains repairs and open gates. Keep that human destination separate from implementation ownership and final closure.
 
 The human adopted coordinator/task routing and bounded review on 17 October 2026. SmartTube Coordinator retains scope decisions, acceptance, publication decisions and closure bookkeeping. Each substantial authorized feature or coherent policy task uses a fresh chat with selected sources and [a saved handoff](TASK_HANDOFF_TEMPLATE.md), rather than a full-history fork. Small repairs remain in the owning task. Fresh tasks share account allowance; no usage saving is claimed from changing chats.
 
