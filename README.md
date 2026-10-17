@@ -2,14 +2,15 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.1.0 developer preview.** Tested in real Brave extension contexts, a signed-out live YouTube scenario, and selected normal-profile scenarios with another player extension enabled. A saved-speed override after video reload remains unresolved; see [validation status](docs/VALIDATION.md). The initial install is manual; this is not a Chrome Web Store listing.
+**Status: v0.2.0 developer preview.** Fixes the startup speed reset and adds looping, volume and opt-in wheel controls. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19; normal-profile acceptance of this update is pending. See [playback evidence and feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
 
-## First version
+## Features
 
 - Compact player toolbar with play/pause, ten-second seeking, speed controls, and queue actions.
 - Popup with playback controls and a queue saved on your device.
 - Opt-in SponsorBlock skipping, category selection, and an Undo skip control.
 - Default playback speed, optional toolbar, and optional automatic queue continuation.
+- Whole-video or A–B looping, native volume/mute controls, and optional mouse-wheel controls.
 - Settings saved locally; no account, telemetry, API key, subscription, or hosted backend.
 
 This is an independent community project, not an official SmartTube port. YouTube supplies playback and account features. This version does not provide SmartTube's independent player, casting, full TV interface, or a promise of video-ad removal. If you already use SponsorBlock, enable sponsor skipping in only one extension to avoid conflicts.
@@ -27,6 +28,10 @@ Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 
 The toolbar is in the top-left corner of the player and becomes more visible on hover or keyboard focus. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. Click **Settings** in the popup to configure categories and automatic queue continuation.
+
+For a range loop, choose **A** at the start and **B** at the end; **Clear** removes the range. Loop ranges reset when the video changes. Enable **Mouse-wheel playback controls** in settings for **Alt + wheel** speed changes and **Alt + Shift + wheel** volume changes over the player. The browser test processes are always muted; this does not mute ordinary extension use.
+
+The saved speed is reconciled for up to four seconds at startup, with at most four corrections. Deliberate speed actions take over immediately. If another extension should own the default, turn off **Apply saved playback speed**.
 
 Updates are manual: replace your source folder with a newer version, select Reload on the extensions page, and refresh YouTube. Existing local settings are retained. Uninstalling the extension removes its local storage.
 

@@ -1,5 +1,13 @@
 # Validation status
 
+## 0.2.0 playback update
+
+Nine local tests, manifest/syntax checks, a dependency-free build and 21 assembled Brave fixture outcomes passed on 17 October 2026. Six live public-video checks passed in an isolated headless profile with actual Enhancer 3.0.19 enabled, covering saved speed before/after reload, volume/mute, wheel controls, range loops and deliberate speed changes. All owned browser processes used `--mute-audio`. See [candidate identities, scenarios, preserved failures and scope](ENHANCER_FEATURES.md).
+
+The speed reset is fixed for these tested conditions. 0.2.0 normal-profile acceptance remains pending; the historical 0.1.0 failure below is not erased. New controls use existing permissions; no Enhancer code or assets are bundled.
+
+## Historical 0.1.0 evidence
+
 Version 0.1.0 is an initial unpacked extension. Initial validation on 17 October 2026 used installed Brave (Chromium engine 155.0.8059.85) with disposable profiles and signed-out YouTube. A subsequent user-authorized normal-profile check is documented separately below. Chrome and Edge are implementation targets using the same Manifest V3 APIs; they have not been separately exercised here.
 
 ## Local checks

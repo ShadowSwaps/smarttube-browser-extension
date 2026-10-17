@@ -8,7 +8,7 @@ test('video identities reject external hosts and malformed IDs',() => {
 });
 test('settings are opt-in and recover from corrupt storage',() => {
   assert.equal(sanitizeSettings().sponsorEnabled,false);
-  assert.deepEqual(sanitizeSettings({speed:NaN,categories:['sponsor','unknown','sponsor'],enabled:'false'}),{enabled:true,sponsorEnabled:false,categories:['sponsor'],speed:1,toolbar:true,autoQueue:false});
+  assert.deepEqual(sanitizeSettings({speed:NaN,categories:['sponsor','unknown','sponsor'],enabled:'false'}),{enabled:true,sponsorEnabled:false,categories:['sponsor'],speed:1,applySpeed:true,wheelControls:false,toolbar:true,autoQueue:false});
   assert.equal(sanitizeSettings({speed:500}).speed,3);
   assert.equal(sanitizeSettings(null).speed,1);
 });

@@ -6,7 +6,7 @@ let player = null, tabId = null;
 const send = message => chrome.runtime.sendMessage(message);
 function feedback(text) { $('#feedback').textContent = text; }
 function render() {
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue']) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls']) {
     const input = $(`#${key}`); if (input) input.checked = state.settings[key];
   }
   $('#speed').value = String(state.settings.speed);
@@ -17,6 +17,14 @@ function render() {
   $('#sponsor-status').textContent = !state.settings.enabled ? 'Player enhancements are paused in settings.' : player?.status || '';
   for (const button of document.querySelectorAll('[data-control],#add-current')) button.disabled = !player?.videoId || !state.settings.enabled;
   $('#play').textContent = player?.paused ? '▶ Play' : 'Ⅱ Pause';
+  $('#volume').value = String(Math.round((player?.volume ?? 1)*100));
+  $('#volume').disabled = !player?.videoId || !state.settings.enabled;
+  $('#volume-level').textContent = player?.muted ? 'Muted' : `${$('#volume').value}%`;
+  $('#mute').textContent = player?.muted ? 'Unmute' : 'Mute';
+  $('#loop').setAttribute('aria-pressed',String(player?.loopEnabled ?? false));
+  $('#loop').textContent = player?.loopEnabled ? 'Loop on' : 'Loop';
+  $('#loop-range').textContent = player?.loopStart !== null && player?.loopStart !== undefined
+    ? `A ${formatTime(player.loopStart)}${player.loopEnd !== null ? ` → B ${formatTime(player.loopEnd)}` : ' · choose B after A'}` : 'Whole video · set A and B for a range';
   $('#queue-count').textContent = String(state.queue.length);
   $('#empty-queue').hidden = state.queue.length > 0;
   $('#next').disabled = !state.queue.length;
@@ -54,7 +62,8 @@ async function control(action,value) {
   if (!tabId) return;
   try {
     const result = await chrome.tabs.sendMessage(tabId,{type:'CONTROL',action,value});
-    if (!result?.ok) throw new Error();
+    if (!result?.ok) { feedback(result?.error || 'Could not apply player control.'); return; }
+    feedback('');
     await refreshPlayer();
   } catch { feedback('Refresh the YouTube tab to connect the player.'); }
 }
@@ -71,7 +80,7 @@ async function init() {
   const result = await send({type:'GET_STATE'});
   if (!result.ok) throw new Error();
   state = result;
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue']) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls']) {
     $(`#${key}`)?.addEventListener('change',event => save({[key]:event.target.checked}));
   }
   $('#speed').addEventListener('change',event => save({speed:Number(event.target.value)}));
@@ -80,11 +89,13 @@ async function init() {
     // Sending only to the active tab avoids querying browsing history or all tabs.
     tabId = tab?.id;
     $('#settings').addEventListener('click',() => chrome.runtime.openOptionsPage());
+    $('#volume').addEventListener('input',event => control('volume',Number(event.target.value)/100));
     $('#open-youtube').addEventListener('click',() => chrome.tabs.create({url:'https://www.youtube.com/'}));
     for (const button of document.querySelectorAll('[data-control]')) button.addEventListener('click',() => {
       if (button.dataset.control === 'back') control('seek',-10);
       else if (button.dataset.control === 'forward') control('seek',10);
-      else control('toggle');
+      else if (button.dataset.control === 'toggle') control('toggle');
+      else control(button.dataset.control);
     });
     $('#add-current').addEventListener('click',async () => {
       if (!player?.videoId) return;

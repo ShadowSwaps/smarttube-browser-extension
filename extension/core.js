@@ -5,7 +5,7 @@ export const CATEGORIES = Object.freeze({
 });
 export const DEFAULT_SETTINGS = Object.freeze({
   enabled: true, sponsorEnabled: false, categories: ['sponsor'],
-  speed: 1, toolbar: true, autoQueue: false
+  speed: 1, applySpeed: true, wheelControls: false, toolbar: true, autoQueue: false
 });
 export const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 export function videoIdFromUrl(value) {
@@ -19,7 +19,7 @@ export function videoIdFromUrl(value) {
 }
 export function sanitizeSettings(raw = {}) {
   const value = { ...DEFAULT_SETTINGS };
-  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue']) {
+  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue', 'applySpeed', 'wheelControls']) {
     if (typeof raw?.[key] === 'boolean') value[key] = raw[key];
   }
   if (typeof raw?.speed === 'number' && Number.isFinite(raw.speed)) {

@@ -45,6 +45,8 @@ A separate visible Brave window shares the Windows desktop and can still interru
 
 ### Existing normal-profile result
 
+The selected speed failure is now addressed in 0.2.0 and verified in a fresh live two-extension profile. Playback features and limits are recorded in [the implementation and evidence map](ENHANCER_FEATURES.md). Acceptance of 0.2.0 in the human's normal profile awaits their manual extension/page reload; no native desktop input was used to deliver this update.
+
 The developer preview has historical disposable-Brave and signed-out live-site evidence in VALIDATION.md. User-authorized installation and normal-profile UI checks were subsequently performed on 17 October 2026. Installation and the tested controls, persistence and navigation scenarios passed, while a saved-speed override after video reload failed. Normal-profile acceptance is partial; see [the scenario report](validation/normal-brave-2026-10-17.md). Earlier fixture results do not supersede this observed failure.
 
 The normal-profile check should establish installation/enabled state, toolbar and popup operation, play/pause/seek/speed, settings and queue persistence, navigation behavior, existing Shields/extension interactions and any opt-in sponsor behavior actually exercised. Preserve existing protections and account state. Do not restart the human's whole browser without agreement; a full normal-profile process-restart check can remain unrun while other checks proceed.

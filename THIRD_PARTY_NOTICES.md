@@ -18,4 +18,6 @@ No SponsorBlock extension implementation is copied or bundled. Its service is co
 
 ## Development tools
 
+Enhancer for YouTube by Max RF is a proprietary reference application. Its public feature documentation and unmodified installed package informed black-box compatibility tests. No Enhancer implementation, artwork, icons or themes are bundled or relicensed. SmartTube's playback controls are independently implemented. See [feature provenance and coverage](https://github.com/ShadowSwaps/smarttube-browser-extension/blob/main/docs/ENHANCER_FEATURES.md).
+
 Node.js and Brave are installed independently by developers. Optional browser tests use a developer-provided Playwright installation. These tools are not redistributed as part of the extension. The project has no npm dependency tree.
