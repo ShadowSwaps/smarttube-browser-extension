@@ -2,11 +2,11 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.3.0 developer preview.** Adds cinema mode, video filters and reversible distraction controls, alongside the startup speed fix and playback tools. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19. On 17 October 2026, the user reported all five normal-profile acceptance steps passed, including 1.5× after reload and video-link navigation. See [current acceptance and limits](docs/VALIDATION.md#user-reported-normal-profile-acceptance), [appearance evidence](docs/APPEARANCE_FEATURES.md) and the [playback feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
+**Status: v0.4.0 local review candidate.** Adds queue recovery and an on-demand player controls panel. Required non-author review and actual live end-to-end queue continuation remain pending; see [the candidate evidence and limits](docs/QUEUE_CONTROLS.md). The user's five normal-profile acceptance steps on 17 October 2026 apply to the earlier 0.3.0 version, including retained 1.5× after reload/navigation; they do not accept this candidate. See [that historical acceptance](docs/VALIDATION.md#user-reported-normal-profile-acceptance). Installation is manual; this is not a Chrome Web Store listing.
 
 ## Features
 
-- Compact player toolbar with play/pause, ten-second seeking, speed controls, and queue actions.
+- Small player entry button opens play/pause, seeking, speed, loop, volume and queue controls.
 - Popup with playback controls and a queue saved on your device.
 - Opt-in SponsorBlock skipping, category selection, and an Undo skip control.
 - Default playback speed, optional toolbar, and optional automatic queue continuation.
@@ -28,7 +28,9 @@ Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing
 
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 
-The toolbar is in the top-left corner of the player and becomes more visible on hover or keyboard focus. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. Click **Settings** in the popup to configure categories and automatic queue continuation.
+The subdued **ST** button is in the top-right corner of the player. Click it, or focus it and press Enter/Space, to open the controls and status/Undo area. Escape closes the focused panel and returns focus to ST; another Escape exits cinema. Only ST remains visible when collapsed; hidden tools leave the tab order. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. Click **Settings** in the popup to configure categories and automatic queue continuation.
+
+Queue selections remain saved until the selected video starts playing outside an advertisement. Failed or unavailable navigation retains the entries for retry from the popup. No automatic skipping of unavailable entries is added. A browser restart retains the queue but clears the temporary navigation receipt, so an interrupted selection may remain for manual retry/removal.
 
 For a range loop, choose **A** at the start and **B** at the end; **Clear** removes the range. Loop ranges reset when the video changes. Enable **Mouse-wheel playback controls** in settings for **Alt + wheel** speed changes and **Alt + Shift + wheel** volume changes over the player. The browser test processes are always muted; this does not mute ordinary extension use.
 

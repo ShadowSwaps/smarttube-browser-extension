@@ -2,7 +2,7 @@ import {CATEGORIES,APPEARANCE_BOOLEANS,FILTER_LIMITS,sanitizeSettings,sanitizeQu
 const $ = selector => document.querySelector(selector);
 const popup = document.body.dataset.view === 'popup';
 let state = {settings:sanitizeSettings(),queue:[]};
-let player = null, tabId = null;
+let player = null, tabId = null, queueOpening = false;
 const filterDrafts = new Set();
 const send = message => chrome.runtime.sendMessage(message);
 function feedback(text) { $('#feedback').textContent = text; }
@@ -36,7 +36,7 @@ function render() {
     ? `A ${formatTime(player.loopStart)}${player.loopEnd !== null ? ` → B ${formatTime(player.loopEnd)}` : ' · choose B after A'}` : 'Whole video · set A and B for a range';
   $('#queue-count').textContent = String(state.queue.length);
   $('#empty-queue').hidden = state.queue.length > 0;
-  $('#next').disabled = !state.queue.length;
+  $('#next').disabled = queueOpening || !state.queue.length;
   const list = $('#queue'); list.replaceChildren();
   for (const item of state.queue) {
     const row = document.createElement('li');
@@ -139,8 +139,21 @@ async function init() {
       catch { feedback('Could not add this video.'); }
     });
     $('#next').addEventListener('click',async () => {
-      try { const result = await send({type:'NEXT_QUEUE',currentVideoId:player?.videoId}); if (!result.ok) throw new Error(); if (result.item) await openVideo(result.item.videoId); }
+      if (queueOpening) return;
+      queueOpening = true; render();
+      try {
+        if (player?.videoId) { await control('next'); return; }
+        const result = await send({type:'NEXT_QUEUE'});
+        if (!result.ok) throw new Error();
+        if (result.item) {
+          const opened = await chrome.tabs.create({url:'about:blank'});
+          const selected = await send({type:'NEXT_QUEUE',tabId:opened.id});
+          if (!selected.ok || !selected.item) { await chrome.tabs.remove(opened.id); throw new Error(); }
+          await chrome.tabs.update(opened.id,{url:`https://www.youtube.com/watch?v=${selected.item.videoId}`});
+        }
+      }
       catch { feedback('Could not open the next video.'); }
+      finally { queueOpening = false; render(); }
     });
     await refreshPlayer();
     setInterval(refreshPlayer,1500);

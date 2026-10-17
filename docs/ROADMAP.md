@@ -10,6 +10,8 @@ JavaScript ES modules with JSDoc-friendly contracts replace the earlier proposed
 
 ## Next extension work
 
+The authorized queue recovery and compact-controls increment is implemented as a local 0.4.0 review candidate. See [its scoped results and pending gates](QUEUE_CONTROLS.md): separate non-author review and actual live queue completion are unresolved. No new feature is started from this checkpoint.
+
 1. 0.3.0 normal-profile milestone: the user reported all five checklist steps passed on 17 October 2026, including retained 1.5× after reload/navigation, playback/persistence, cinema/fullscreen/scroll and picture/distraction controls. See [current acceptance and unrun limits](VALIDATION.md#user-reported-normal-profile-acceptance). Isolated live two-extension checks also pass; historical [0.1.0 normal-profile evidence](validation/normal-brave-2026-10-17.md) remains preserved. Non-author review and closure follow the existing workflow separately. See the [appearance increment](APPEARANCE_FEATURES.md) and [broader Enhancer backlog](ENHANCER_FEATURES.md); further work still requires scope authorization.
 2. Extend coverage of queue transitions, videos with actual sponsor segments, Shorts, accessibility, and alternate YouTube layouts. Add regressions for observed failures.
 3. Validate Chrome and Edge separately before claiming equivalent browser coverage.

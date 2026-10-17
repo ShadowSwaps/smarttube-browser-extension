@@ -1,5 +1,7 @@
 # Appearance controls: 0.3.0
 
+The local [0.4.0 review candidate](QUEUE_CONTROLS.md) replaces the persistent toolbar with a small ST entry and an on-demand panel. Escape closes focused tools before exiting cinema. The evidence below remains the historical 0.3.0 record; candidate checks and pending gates are recorded separately.
+
 The user selected cinema mode, video filters and hiding distractions as the next Enhancer-inspired increment. This is original MIT implementation of those selected ideas, using the [existing reference and feature map](ENHANCER_FEATURES.md). No reference JavaScript, themes or other assets were copied. Development and testing use existing local tools with no paid service, new npm dependency or added extension permission.
 
 ## Requirements and evidence

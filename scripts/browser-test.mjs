@@ -81,6 +81,7 @@ try {
   await page.waitForTimeout(700);
   assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),1.75);
   results.push('A deliberate native-settings interaction cancels startup speed correction.');
+  if (await page.getByRole('button',{name:'SmartTube controls',exact:true}).getAttribute('aria-expanded') === 'false') await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
   await page.getByRole('button',{name:'Clear loop range'}).click();
   await page.getByRole('button',{name:'Set loop end'}).click();
   await page.getByText('Set A first, then choose B at least 0.2s later',{exact:true}).waitFor();
@@ -217,18 +218,23 @@ try {
   await page.locator('video').evaluate(v=>v.style.removeProperty('filter'));
   assert.equal((await worker.evaluate(()=>globalThis.__requests)).length,requestsBefore);
   results.push('Filters compose with existing picture CSS, reset restores its priority, and a newer external filter edit is preserved; appearance saves do not refetch sponsor data.');
+  const openTools = async () => {const entry=page.getByRole('button',{name:'SmartTube controls',exact:true});if(await entry.getAttribute('aria-expanded')==='false')await entry.click();};
   const cinema = page.getByRole('button',{name:'Toggle cinema mode'});
+  await openTools();
   await cinema.click();
   await page.waitForSelector('#smarttube-cinema-backdrop');
   assert.equal(await cinema.getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#movie_player').evaluate(player=>{const r=player.getBoundingClientRect();return player.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true);
   await page.screenshot({path:'test-results/cinema.png'});
   await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
   await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
+  await openTools();
   await cinema.click();
   await page.locator('[data-cinema-panel="0"]').click({position:{x:5,y:5}});
   await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
   results.push('Cinema leaves the player hit-testable and exits through Escape or an outside click.');
+  await openTools();
   await cinema.click();
   await page.waitForSelector('#smarttube-cinema-backdrop');
   await page.setViewportSize({width:1050,height:800});
@@ -237,6 +243,7 @@ try {
   await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
   await page.evaluate(()=>document.querySelector('#movie_player').classList.remove('ytp-fullscreen'));
   await page.waitForSelector('#smarttube-cinema-backdrop');
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.setViewportSize({width:1100,height:850});
   results.push('Cinema adapts to viewport resizing, suspends for fullscreen and resumes afterward.');
@@ -274,6 +281,7 @@ try {
   results.push('Appearance preferences survive YouTube/options reloads and return cleanly to the original page.');
   // Reset Undo protection so the advertising/live guard checks are independent.
   await page.reload();
+  await openTools();
   await page.getByText('1 sponsor segment ready',{exact:true}).waitFor();
   await page.evaluate(() => document.querySelector('#movie_player').classList.add('ad-showing'));
   await page.locator('video').evaluate(async video => {video.currentTime=12;await video.play();});
@@ -337,6 +345,7 @@ try {
   await page.locator('.ytp-cards-teaser').waitFor({state:'visible'});
   await popup.getByRole('button',{name:'Cinema mode',exact:true}).click();
   await page.waitForSelector('#smarttube-cinema-backdrop');
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
   await popup.getByLabel('Enable video filters',{exact:false}).check();

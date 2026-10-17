@@ -53,6 +53,8 @@ try {
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),1.5);
  report.checks.push('Saved 1.5x holds after reloading the real public video.');
  const tools=page.locator('#smarttube-browser-toolbar');
+ const openTools=async()=>{const entry=tools.getByRole('button',{name:'SmartTube controls',exact:true});if(await entry.getAttribute('aria-expanded')==='false')await entry.click();};
+ await openTools();
  await page.locator('video').first().evaluate(v=>{v.volume=.4;v.muted=false;});
  await tools.getByRole('button',{name:'Raise volume ten percent'}).click();
  assert(Math.abs(await page.locator('video').first().evaluate(v=>v.volume)-.5)<.001);
@@ -107,6 +109,8 @@ try {
  assert.equal(await page.locator('#movie_player').evaluate(player=>{const r=player.getBoundingClientRect();return player.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true);
  await page.screenshot({path:path.join(output,'cinema-filters.png')});
  await page.keyboard.press('Escape');
+ await page.keyboard.press('Escape');
+ await openTools();
  await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
  await tools.getByRole('button',{name:'Toggle cinema mode'}).click();
  await page.locator('[data-cinema-panel="0"]').click({position:{x:3,y:3}});

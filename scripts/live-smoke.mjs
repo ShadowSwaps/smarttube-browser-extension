@@ -24,6 +24,7 @@ try {
   const controls=[]; let controlError=null;
   try {
   if (await page.locator('#smarttube-browser-toolbar').count()) {
+ await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
     const before=await page.locator('video').first().evaluate(video => video.currentTime);
     await page.locator('#smarttube-browser-toolbar').getByRole('button',{name:'Forward ten seconds'}).click({timeout:5000});
     await page.waitForFunction(before => document.querySelector('video')?.currentTime >= before+9,before,{timeout:8000});

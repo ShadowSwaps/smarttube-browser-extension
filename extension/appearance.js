@@ -9,7 +9,7 @@ const HIDDEN = Object.freeze({
   hideEndCards:'#movie_player .ytp-endscreen-content, #movie_player .ytp-ce-element',
   hideInfoCards:'#movie_player .ytp-cards-button, #movie_player .ytp-cards-teaser'
 });
-export function createAppearance({onExitCinema}) {
+export function createAppearance({onExitCinema,toolsHaveEscape = () => false}) {
   const style = document.createElement('style'); style.id = 'smarttube-distraction-style';
   (document.head || document.documentElement).append(style);
   let filtered = null, filter = '', releaseFilter = null;
@@ -65,7 +65,7 @@ export function createAppearance({onExitCinema}) {
   document.addEventListener('scroll',schedule,{capture:true,passive:true});
   document.addEventListener('fullscreenchange',schedule);
   document.addEventListener('keydown',event => {
-    if (event.key === 'Escape' && backdrop) { onExitCinema(); event.preventDefault(); }
+    if (event.key === 'Escape' && backdrop && !toolsHaveEscape()) { onExitCinema(); event.preventDefault(); }
   },true);
   return {
     update({video,settings,cinemaEnabled}) {

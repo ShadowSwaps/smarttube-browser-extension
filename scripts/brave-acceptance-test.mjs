@@ -9,7 +9,7 @@ const modulePath=process.env.BROWSER_TEST_PLAYWRIGHT_MODULE || 'playwright';
 const {chromium}=await import(path.isAbsolute(modulePath)?pathToFileURL(modulePath).href:modulePath);
 if(!process.env.ENHANCER_PATH)throw new Error('Set ENHANCER_PATH to the explicitly selected unmodified reference package.');
 const extension=path.resolve('dist/extension'), enhancer=path.resolve(process.env.ENHANCER_PATH);
-const stamp=Date.now(), output=path.resolve(`.investigation-tools/workflow/brave-acceptance/run-${stamp}`);
+const stamp=Date.now(), output=path.resolve(`test-results/brave-acceptance-${stamp}`);
 await mkdir(output,{recursive:true});
 const report={kind:'live signed-out Brave compatibility gap checks',headless:true,audio:'--mute-audio',checks:[],candidate:{},events:[]};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -67,6 +67,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('#movie_player video')?.style.filter.includes('brightness(110%)'));
  }
  await ready();await page.waitForTimeout(4500);
+ await page.screenshot({path:path.join(output,'collapsed-watching.png')});
  assert.equal(await video().evaluate(v=>v.playbackRate),1.5);
  await video().evaluate(v=>v.pause());
  report.checks.push('Initial live media retains saved 1.5x and video-only filter with Enhancer speed override at 1x.');
@@ -83,6 +84,7 @@ try {
   },{},{timeout:8000});
   report.checks.push(name);
   report.events.push({name,...await page.evaluate(()=>{const r=document.querySelector('#movie_player').getBoundingClientRect();return {viewport:[innerWidth,innerHeight],scrollY,player:{x:r.x,y:r.y,width:r.width,height:r.height},fullscreen:document.fullscreenElement?.id || null};})});
+  assert(await page.locator('#smarttube-browser-toolbar').evaluate(h=>{const a=h.getBoundingClientRect(),b=h.parentElement.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom-55;}),'Tools must stay inside player and above native bottom controls');
  }
  stage='native fullscreen';
  await geometry('Cinema matches the initial live player boundaries and preserves center hit testing.');
@@ -92,6 +94,7 @@ try {
  await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
  assert.equal(await video().evaluate(v=>v.style.filter.includes('brightness(110%)')),true);
  const fullscreenPosition=await video().evaluate(v=>v.currentTime);
+ if(await page.getByRole('button',{name:'SmartTube controls',exact:true}).getAttribute('aria-expanded')==='false') await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
  await page.getByRole('button',{name:'Forward ten seconds'}).click();
  await page.waitForFunction(before=>document.querySelector('#movie_player video').currentTime>=before+9,fullscreenPosition);
  report.checks.push('SmartTube toolbar seeking remains clickable during actual native fullscreen.');
@@ -149,7 +152,7 @@ try {
  report.checks.push('Actual related-link SPA navigation changes settled non-ad live media within the same document and reapplies saved speed/filter; detached media is restored if replaced.');
  stage='live layout switches after SPA';
  for(const [label,selector] of [['Hide comments','ytd-watch-flexy #comments'],['Hide related videos','ytd-watch-flexy #related']]) {
-  const target=page.locator(selector).first();await target.waitFor({state:'attached'});
+  const target=page.locator(selector).first();await target.waitFor({state:'visible',timeout:20000});
   const before=await target.evaluate(el=>getComputedStyle(el).display);assert.notEqual(before,'none');
   await options.getByLabel(label,{exact:true}).check();await page.waitForFunction(s=>getComputedStyle(document.querySelector(s)).display==='none',selector);
   await options.getByLabel(label,{exact:true}).uncheck();await page.waitForFunction(({s,before})=>getComputedStyle(document.querySelector(s)).display===before,{s:selector,before});
@@ -157,6 +160,7 @@ try {
  report.checks.push('Live comments/related visibility restores after actual SPA media navigation.');
  stage='leave watch and return';
  await page.evaluate(()=>scrollTo(0,0));
+ if(await page.getByRole('button',{name:'SmartTube controls',exact:true}).getAttribute('aria-expanded')==='false') await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
  await page.getByRole('button',{name:'Toggle cinema mode'}).click();
  await geometry('Cinema follows the incoming live media after SPA navigation and layout switches.');
  await video().evaluate(v=>{window.__acceptanceLeavingVideo=v;});

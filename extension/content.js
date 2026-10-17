@@ -7,14 +7,15 @@
   let settings = sanitizeSettings();
   let savedEnabled = settings.enabled;
   let video = null, videoId = null, segments = [], generation = 0, status = 'Sponsor skipping is off';
-  let host = null, shadow = null, lastSource = '', nextPending = false;
+  let host = null, shadow = null, lastSource = '', nextPending = false, attemptedEnd = null;
+  let queueConfirmed = '', confirmingQueue = false;
   let speedKey = '', speedStartup = null, manualSpeed = false;
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;
   let lastSkip = null, undoUntil = 0, sessionDisabled = false;
-  let cinemaOverride = null;
+  let cinemaOverride = null, panelOpen = false;
   const cinemaEnabled = () => settings.enabled && Boolean(videoId) && (cinemaOverride ?? settings.cinema);
-  const appearance = createAppearance({onExitCinema:() => {cinemaOverride = false; sync();}});
+  const appearance = createAppearance({onExitCinema:() => {cinemaOverride = false; sync();},toolsHaveEscape:() => panelOpen && Boolean(shadow?.activeElement)});
   const send = message => chrome.runtime.sendMessage(message).catch(() => ({ok:false}));
   const title = () => document.querySelector('h1.ytd-watch-metadata')?.textContent?.trim()
     || document.title.replace(/ - YouTube$/, '').slice(0,200);
@@ -24,6 +25,9 @@
     if (!shadow) return;
     host.hidden = !settings.enabled || !settings.toolbar || !videoId;
     shadow.querySelector('[data-status]').textContent = status;
+    const entry = shadow.querySelector('[data-panel-toggle]');
+    entry.title = `SmartTube · ${status}${lastSkip ? ' · Undo skip available' : ''}`;
+    entry.textContent = lastSkip ? 'ST·' : 'ST';
     shadow.querySelector('[data-speed]').textContent = `${video?.playbackRate || settings.speed}×`;
     shadow.querySelector('[data-action="mute"]').textContent = video?.muted ? 'Unmute' : `${Math.round((video?.volume ?? 1)*100)}%`;
     shadow.querySelector('[data-action="loop"]').setAttribute('aria-pressed',String(loopEnabled));
@@ -54,13 +58,30 @@
   }
   async function next(automatic = false) {
     if (nextPending || !playable()) return;
+    if (automatic && attemptedEnd === videoId) return;
+    if (automatic) attemptedEnd = videoId;
     nextPending = true;
+    const current = videoId;
     try {
-      const current = videoId;
       const result = await send({type:'NEXT_QUEUE',currentVideoId:current,automatic});
-      if (result.ok && result.item && current === videoId) location.assign(`https://www.youtube.com/watch?v=${result.item.videoId}`);
-      else if (!automatic) notice('Your queue is empty');
-    } finally { nextPending = false; }
+      if (current !== videoId || !playable() || (automatic && (!settings.autoQueue || loopEnabled))) return;
+      if (!result.ok) { notice('Could not open queue · your items are saved'); return; }
+      if (!result.item) { if (!automatic) notice('Your queue is empty'); return; }
+      notice('Opening next video · queue kept until playback starts');
+      location.assign(`https://www.youtube.com/watch?v=${result.item.videoId}`);
+      // Keep repeated ended/click events from racing a slow navigation. A
+      // deliberate retry is possible after the timeout; automatic retries stop.
+      await new Promise(resolve => setTimeout(resolve,10000));
+      if (current === videoId) notice('Video did not open · queue saved; use Next to retry');
+    } catch { notice('Could not open video · queue saved; use Next to retry'); }
+    finally { if (current === videoId) nextPending = false; }
+  }
+  async function confirmQueue() {
+    if (!playable() || isAd() || video.paused || video.ended || video.readyState < 2 || video.currentTime <= 0 || queueConfirmed === videoId || confirmingQueue) return;
+    const current = videoId;
+    confirmingQueue = true;
+    try { if ((await send({type:'QUEUE_PLAYING',videoId:current})).ok && current === videoId) queueConfirmed = current; }
+    finally { confirmingQueue = false; }
   }
   function tick() {
     if (!playable() || isAd() || video.paused || video.seeking) return;
@@ -140,14 +161,16 @@
       host = document.createElement('div'); host.id = 'smarttube-browser-toolbar';
       shadow = host.attachShadow({mode:'open'});
       shadow.innerHTML = `<style>
-        :host{position:absolute;left:12px;top:12px;z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;max-width:calc(100% - 24px)}
-        :host([hidden]){display:none} .bar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px;background:#151921eb;border:1px solid #485364;border-radius:10px;box-shadow:0 4px 18px #0005;opacity:.3;transition:opacity .15s}
-        .bar:hover,.bar:focus-within{opacity:1} strong{color:#7be0c7;margin:0 5px} button{border:0;border-radius:5px;color:inherit;background:#28313e;padding:6px 8px;cursor:pointer;font:inherit} button:hover{background:#3d4a5c} button:focus-visible{outline:2px solid #7be0c7;outline-offset:2px} [hidden]{display:none} .status{max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 5px}@media(max-width:650px){.status{display:none}}
-        </style><div class="bar" aria-label="SmartTube playback tools"><strong>ST</strong><button data-action="seek-back" aria-label="Rewind ten seconds">−10s</button><button data-action="toggle" aria-label="Play or pause">▶ / Ⅱ</button><button data-action="seek-forward" aria-label="Forward ten seconds">+10s</button><button data-action="speed" data-speed aria-label="Cycle playback speed">1×</button><button data-action="volume-down" aria-label="Lower volume ten percent">Vol−</button><button data-action="mute" aria-label="Mute or unmute">100%</button><button data-action="volume-up" aria-label="Raise volume ten percent">Vol+</button><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="undo" hidden>Undo skip</button><span class="status" role="status" data-status></span></div>`;
+        :host{position:absolute;right:8px;top:8px;z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;max-width:calc(100% - 16px)}
+        :host([hidden]),[hidden]{display:none!important} .entry{display:block;margin-left:auto;width:30px;height:28px;padding:0;background:#151921aa;opacity:.55}
+        .entry:hover,.entry:focus-visible,.entry[aria-expanded="true"]{opacity:1} .bar{box-sizing:border-box;display:flex;flex-wrap:wrap;gap:5px;align-items:center;width:340px;max-width:100%;max-height:var(--panel-height,240px);overflow:auto;margin-top:5px;padding:8px;background:#151921f5;border:1px solid #485364;border-radius:8px;box-shadow:0 4px 18px #0005}
+        button{border:0;border-radius:5px;color:inherit;background:#28313e;min-height:28px;padding:5px 7px;cursor:pointer;font:inherit} button:hover{background:#3d4a5c} button:focus-visible{outline:2px solid #7be0c7;outline-offset:2px} .status{flex-basis:100%;overflow-wrap:anywhere;color:#cdd4df}
+        </style><button class="entry" data-panel-toggle aria-label="SmartTube controls" aria-expanded="false" aria-controls="smarttube-tools">ST</button><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube playback tools" hidden><button data-action="seek-back" aria-label="Rewind ten seconds">−10s</button><button data-action="toggle" aria-label="Play or pause">▶ / Ⅱ</button><button data-action="seek-forward" aria-label="Forward ten seconds">+10s</button><button data-action="speed" data-speed aria-label="Cycle playback speed">1×</button><button data-action="volume-down" aria-label="Lower volume ten percent">Vol−</button><button data-action="mute" aria-label="Mute or unmute">100%</button><button data-action="volume-up" aria-label="Raise volume ten percent">Vol+</button><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="undo" hidden>Undo skip</button><span class="status" role="status" data-status></span></div>`;
       shadow.addEventListener('click', event => {
         event.stopPropagation();
         const button = event.target.closest('button');
         if (!button) return;
+        if (button.hasAttribute('data-panel-toggle')) { setPanel(!panelOpen); return; }
         const name = button.dataset.action;
         if (name === 'seek-back' || name === 'seek-forward') action('seek', name === 'seek-back' ? -10 : 10);
         else if (name === 'speed') {
@@ -157,13 +180,25 @@
         } else action(name);
         paint();
       });
-      for (const type of ['keydown','keyup']) shadow.addEventListener(type,event => event.stopPropagation());
+      shadow.addEventListener('keydown',event => {
+        if (event.key === 'Escape' && panelOpen) { event.preventDefault(); setPanel(false); }
+        event.stopPropagation();
+      });
+      shadow.addEventListener('keyup',event => event.stopPropagation());
       for (const type of ['pointerdown','pointerup','mousedown','mouseup','dblclick','touchstart','touchend']) shadow.addEventListener(type,event => event.stopPropagation());
     }
     if (host.parentElement !== player) player.append(host);
+    host.style.setProperty('--panel-height',`${Math.max(28,player.clientHeight-100)}px`);
     paint();
   }
-  function onEnded() { if (settings.autoQueue && !loopEnabled && !isAd()) next(true); }
+  function setPanel(open) {
+    panelOpen = open;
+    shadow.querySelector('.bar').hidden = !open;
+    const entry = shadow.querySelector('[data-panel-toggle]');
+    entry.setAttribute('aria-expanded',String(open));
+    if (!open) entry.focus();
+  }
+  function onEnded() { if (video?.ended && settings.autoQueue && !loopEnabled && !isAd()) next(true); }
   function onMetadata() { sync(); }
   function applySpeed() {
     if (!playable() || !settings.applySpeed || isAd() || manualSpeed || video.readyState < 1) return;
@@ -180,7 +215,7 @@
   function sync() {
     const nextId = videoIdFromUrl(location.href);
     const found = nextId ? [...document.querySelectorAll('video')].find(item => item.offsetWidth > 0 && !item.ended) || document.querySelector('video') : null;
-    if (nextId !== videoId) { clearLoop(); videoId = nextId; speedKey = ''; resetSpeed(); loadSegments(); }
+    if (nextId !== videoId) { clearLoop(); videoId = nextId; nextPending = false; attemptedEnd = null; queueConfirmed = ''; speedKey = ''; resetSpeed(); loadSegments(); }
     if (found !== video) {
       if (video) { video.removeEventListener('timeupdate',tick); video.removeEventListener('ended',onEnded); video.removeEventListener('loadedmetadata',onMetadata); }
       clearLoop(); video = found; speedKey = ''; resetSpeed();
@@ -190,7 +225,8 @@
       if (video.currentSrc !== lastSource) { lastSource = video.currentSrc; }
       const key = `${videoId}:${lastSource}`;
       if (key !== speedKey) { speedKey = key; resetSpeed(); }
-      mount(); applySpeed(); tick();
+      mount(); applySpeed(); tick(); confirmQueue();
+      if (!nextPending && !video.paused && !video.ended && video.currentTime < video.duration-1) attemptedEnd = null;
     } else if (host) host.hidden = true;
     appearance.update({video:videoId ? video : null,settings,cinemaEnabled:cinemaEnabled()});
   }

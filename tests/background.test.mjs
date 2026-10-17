@@ -6,18 +6,19 @@ import {webcrypto} from 'node:crypto';
 import * as core from '../extension/core.js';
 async function harness(fetcher = async () => new Response('[]')) {
   const data = {};
+  const session = {};
   let listener;
   const chrome = {
     runtime:{id:'test',getURL:file => `chrome-extension://test/${file}`,onMessage:{addListener:fn => {listener=fn;}},onInstalled:{addListener:() => {}}},
-    storage:{local:{get:async keys => Object.fromEntries(keys.filter(key => key in data).map(key => [key,structuredClone(data[key])])),set:async items => Object.assign(data,structuredClone(items))}}
+    storage:{local:{get:async keys => Object.fromEntries(keys.filter(key => key in data).map(key => [key,structuredClone(data[key])])),set:async items => Object.assign(data,structuredClone(items))},session:{get:async keys => Object.fromEntries(keys.filter(key => key in session).map(key => [key,structuredClone(session[key])])),set:async items => Object.assign(session,structuredClone(items)),remove:async key => {delete session[key];}}}
   };
   const source = (await readFile(new URL('../extension/background.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
   vm.runInNewContext(source,{...core,chrome,fetch:fetcher,crypto:webcrypto,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL,console});
   const request = (message,sender={id:'test',url:'chrome-extension://test/options.html'}) => new Promise(resolve => listener(message,sender,resolve));
-  return {request,data};
+  return {request,data,session};
 }
 const videoId='abcdefghijk';
-const sender={id:'test',frameId:0,url:`https://www.youtube.com/watch?v=${videoId}`,tab:{url:`https://www.youtube.com/watch?v=${videoId}`}};
+const sender={id:'test',frameId:0,url:`https://www.youtube.com/watch?v=${videoId}`,tab:{id:7,url:`https://www.youtube.com/watch?v=${videoId}`}};
 test('sender boundaries reject arbitrary fetches, other extensions and content-script settings writes',async () => {
   let requests = 0;
   const {request} = await harness(async () => {requests++;return new Response('[]');});
@@ -34,9 +35,27 @@ test('concurrent queue mutations serialize and preserve independent entries',asy
   await request({type:'ADD_QUEUE',item:{videoId,title:'duplicate'}});
   assert.equal(data.queue.length,3);
   assert.equal((await request({type:'NEXT_QUEUE',currentVideoId:videoId,automatic:true},sender)).ok,false,'automatic playback is opt-in');
-  const response = await request({type:'NEXT_QUEUE',currentVideoId:videoId});
+  const response = await request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
   assert.equal(response.item.videoId,'lmnopqrstuv');
+  assert.equal(data.queue.length,3,'selection cannot lose queued items before navigation');
+  await request({type:'QUEUE_PLAYING',videoId:'lmnopqrstuv'},{...sender,tab:{id:7,url:'https://www.youtube.com/watch?v=lmnopqrstuv'}});
   assert.deepEqual(data.queue.map(item => item.videoId),['12345678901']);
+});
+test('queue recovery keeps data on failed navigation and scopes idempotent confirmation to destination and tab',async () => {
+  const {request,data,session}=await harness();
+  for(const id of [videoId,'lmnopqrstuv','12345678901']) await request({type:'ADD_QUEUE',item:{videoId:id,title:id}});
+  const selections=await Promise.all(Array.from({length:4},()=>request({type:'NEXT_QUEUE',currentVideoId:videoId},sender)));
+  assert(selections.every(result=>result.item.videoId==='lmnopqrstuv'));
+  assert.equal(data.queue.length,3,'delays and duplicate requests preserve queue');
+  await request({type:'QUEUE_PLAYING',videoId},sender);
+  await request({type:'QUEUE_PLAYING',videoId:'lmnopqrstuv'},{...sender,tab:{id:8,url:'https://www.youtube.com/watch?v=lmnopqrstuv'}});
+  assert.equal(data.queue.length,3,'wrong destination/tab cannot consume items');
+  const playing={...sender,tab:{id:7,url:'https://www.youtube.com/watch?v=lmnopqrstuv'}};
+  await Promise.all([1,2,3].map(()=>request({type:'QUEUE_PLAYING',videoId:'lmnopqrstuv'},playing)));
+  assert.deepEqual(data.queue.map(item=>item.videoId),['12345678901']);
+  assert.equal(Object.keys(session).length,0);
+  await request({type:'NEXT_QUEUE',currentVideoId:'12345678901'});
+  assert.equal(data.queue.length,1,'current-only queue is not silently discarded');
 });
 test('lookups omit cookies, send only hash prefixes, filter video identity and coalesce requests',async () => {
   const calls = [];

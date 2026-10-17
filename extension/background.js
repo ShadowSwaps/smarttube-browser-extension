@@ -101,10 +101,23 @@ async function handle(message, sender) {
   if (message.type === 'NEXT_QUEUE' && (page || (sourceVideoId && sourceVideoId === message.currentVideoId))) return mutate(async () => {
     const {settings,queue} = await readState();
     if (!page && (!settings.enabled || (message.automatic && !settings.autoQueue))) return {ok:false};
-    const next = queue.filter(item => item.videoId !== message.currentVideoId);
-    const item = next.shift() || null;
-    await chrome.storage.local.set({queue:next});
+    const item = queue.find(item => item.videoId !== message.currentVideoId) || null;
+    // Selection is non-destructive. A failed/unavailable destination stays in
+    // the queue, including across browser restarts. Session receipts contain
+    // no new persistent queue schema and survive service-worker suspension.
+    const tabId = page ? message.tabId : sender.tab?.id;
+    if (item && Number.isInteger(tabId)) await chrome.storage.session.set({[`queue:${tabId}`]:{from:message.currentVideoId,target:item.videoId}});
     return {ok:true,item};
+  });
+  if (message.type === 'QUEUE_PLAYING' && sourceVideoId && sourceVideoId === message.videoId && Number.isInteger(sender.tab?.id)) return mutate(async () => {
+    const key = `queue:${sender.tab.id}`;
+    const receipt = (await chrome.storage.session.get([key]))[key];
+    if (!receipt || receipt.target !== sourceVideoId) return {ok:true};
+    const {settings,queue} = await readState();
+    if (!settings.enabled) return {ok:false};
+    await chrome.storage.local.set({queue:queue.filter(item => item.videoId !== receipt.target && item.videoId !== receipt.from)});
+    await chrome.storage.session.remove(key);
+    return {ok:true};
   });
   return {ok:false,error:'Unsupported request'};
 }

@@ -1,5 +1,9 @@
 # Validation status
 
+## 0.4.0 queue and compact-controls candidate
+
+Local implementation and author checks are recorded in [Queue recovery and discreet controls](QUEUE_CONTROLS.md). Required separate non-author review and real live end-to-end queue completion remain pending. Public media reset or showed a YouTube playback error when seeking near the end; fixture completion is recorded separately. Earlier normal-profile acceptance below applies to 0.3.0.
+
 ## 0.3.0 appearance update
 
 Ten local tests, permission/syntax checks, build, 28 Brave fixture outcomes and ten live public-video checks passed on 17 October 2026. The live checks used actual Enhancer 3.0.19 with fresh settings; every test browser was headless and muted. Cinema, four filters and six distraction switches have bounded evidence in [the appearance requirements and validation record](APPEARANCE_FEATURES.md), including exact source/package identities, preserved harness failure, self-review and remaining coverage. Playback regressions and a full fixture browser-process restart passed. All 17 ZIP file entries match the build.
