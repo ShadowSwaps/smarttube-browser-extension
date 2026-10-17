@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SmartTube Browser</title><link rel="stylesheet" href="ui.css"></head>
+<body data-view="popup">
+  <header><div class="brand"><span class="logo" aria-hidden="true">▶</span><div><h1>SmartTube <span>Browser</span></h1><p>A little more control. A little less noise.</p></div></div><button id="settings" class="icon-button" aria-label="Open settings">⚙</button></header>
+  <main>
+    <section class="now-playing" aria-labelledby="playing-label"><div class="eyebrow" id="playing-label"><span class="dot"></span> NOW PLAYING</div><h2 id="video-title">Open a video on YouTube</h2><p id="player-time" class="muted">Your viewing tools are ready when you are.</p><div class="transport"><button data-control="back" aria-label="Rewind ten seconds">−10s</button><button id="play" class="primary" data-control="toggle" aria-label="Play or pause">Play / pause</button><button data-control="forward" aria-label="Forward ten seconds">+10s</button></div><div class="player-actions"><label for="speed">Playback speed</label><select id="speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1× Normal</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option></select></div></section>
+    <section class="settings-card"><label class="toggle-row"><span><strong>Sponsor skipping</strong><small>Skip community-marked sponsor segments.</small></span><input id="sponsorEnabled" type="checkbox" role="switch"></label><p class="privacy-note">Opt-in lookup via SponsorBlock. <a href="https://sponsor.ajay.app/privacy/" target="_blank" rel="noopener noreferrer">Privacy</a></p><p id="sponsor-status" class="muted"></p></section>
+    <section class="queue-section"><div class="section-title"><h2>Your queue <span id="queue-count" class="badge">0</span></h2><button id="add-current" class="text-button">+ Add current</button></div><ul id="queue" aria-label="Queued videos"></ul><p id="empty-queue" class="empty">Something worth watching next?<br>Add a video to keep it here.</p><button id="next" class="wide">Play next in queue →</button></section>
+    <p id="feedback" role="status" aria-live="polite"></p>
+  </main>
+  <footer><span>FREE & OPEN SOURCE</span><button id="open-youtube" class="text-button">Open YouTube ↗</button></footer>
+  <script type="module" src="ui.js"></script>
+</body></html>

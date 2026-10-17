@@ -1,0 +1,11 @@
+import {cp,mkdir,readFile,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root = fileURLToPath(new URL('../',import.meta.url));
+const target = path.join(root,'dist/extension');
+await mkdir(target,{recursive:true});
+await cp(path.join(root,'extension'),target,{recursive:true});
+for (const name of ['LICENSE','THIRD_PARTY_NOTICES.md','PRIVACY.md']) await cp(path.join(root,name),path.join(target,name));
+const manifest = JSON.parse(await readFile(path.join(target,'manifest.json'),'utf8'));
+console.log(`Built ${manifest.name} ${manifest.version} → ${target}`);
+await writeFile(path.join(root,'dist/INSTALL.txt'),'Extract the extension folder. In Brave open brave://extensions, enable Developer mode, select Load unpacked, and choose the extension folder containing manifest.json. Refresh any existing YouTube tabs. Chrome: chrome://extensions. Edge: edge://extensions.\n');

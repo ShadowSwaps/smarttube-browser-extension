@@ -1,0 +1,10 @@
+upstream/
+.investigation-tools/
+docs/rea/
+.local/
+test-results/
+dist/
+node_modules/
+*.log
+.env*
+!.env.example
