@@ -200,7 +200,7 @@
     entry.setAttribute('aria-expanded',String(open));
     if (!open) entry.focus();
   }
-  function onEnded() { if (video?.ended && settings.autoQueue && !loopEnabled && !isAd()) next(true); }
+  function onEnded() { if (video?.ended && settings.autoQueue && !loopEnabled && !isAd() && queueMedia.matches(videoId,video)) next(true); }
   function onQueueLoad() { queueMedia.loading(isAd() ? null : videoIdFromUrl(location.href),video); queueConfirmed = ''; }
   function onMetadata() { queueMedia.metadata(isAd() ? null : videoIdFromUrl(location.href),video); sync(); }
   function applySpeed() {

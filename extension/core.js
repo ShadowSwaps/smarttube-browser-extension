@@ -78,19 +78,22 @@ export function formatTime(seconds) {
 // navigation can update the URL while the previous video's media keeps playing.
 export function createQueueMediaTracker(initialId) {
   let id = initialId, media = null, source = '', excludedSource = null, navigated = false, associated = null;
+  const untrustedSources = new Set();
   return {
     observe(nextId, nextMedia) {
       const nextSource = nextMedia?.currentSrc || '';
-      if (nextId !== id) { excludedSource = source || excludedSource; navigated = true; }
-      id = nextId; media = nextMedia;
+      media = nextMedia;
       associated = null;
-      // Empty/ad media and load events cannot erase the last known source.
-      // In a SPA target, reloading that unchanged source is still old media.
+      // Remember every recognized ad/unidentified source for this document.
+      // Losing its marker, loading it again or replacing its node cannot turn
+      // it into content. Keep the prior content boundary independently.
       if (!nextId) {
-        if (!source && nextSource) { source = nextSource; excludedSource = nextSource; }
+        if (nextSource) untrustedSources.add(nextSource);
         return;
       }
-      if (!nextSource) return;
+      if (nextId !== id) { excludedSource = source || excludedSource; navigated = true; }
+      id = nextId;
+      if (!nextSource || untrustedSources.has(nextSource)) return;
       if (navigated && !excludedSource) excludedSource = nextSource;
       if ((!navigated && nextId === initialId) || (excludedSource && nextSource !== excludedSource)) associated = id;
       source = nextSource;

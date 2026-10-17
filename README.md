@@ -2,7 +2,7 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.4.2 local final-repair candidate.** Adds queue recovery and an on-demand player controls panel. Required non-author repair verification remains pending; a bounded signed-out live natural-end queue transition passed author checks; see [the candidate evidence and limits](docs/QUEUE_CONTROLS.md). The user's five normal-profile acceptance steps on 17 October 2026 apply to the earlier 0.3.0 version, including retained 1.5× after reload/navigation; they do not accept this candidate. See [that historical acceptance](docs/VALIDATION.md#user-reported-normal-profile-acceptance). Installation is manual; this is not a Chrome Web Store listing.
+**Status: v0.4.3 local review candidate.** Adds queue recovery and an on-demand player controls panel. Required non-author repair verification remains pending; a bounded signed-out live natural-end queue transition passed author checks; see [the candidate evidence and limits](docs/QUEUE_CONTROLS.md). The user's five normal-profile acceptance steps on 17 October 2026 apply to the earlier 0.3.0 version, including retained 1.5× after reload/navigation; they do not accept this candidate. See [that historical acceptance](docs/VALIDATION.md#user-reported-normal-profile-acceptance). Installation is manual; this is not a Chrome Web Store listing.
 
 ## Features
 

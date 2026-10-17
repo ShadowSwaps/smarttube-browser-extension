@@ -1,8 +1,28 @@
-# Queue recovery and discreet controls: 0.4.2 final repair candidate
+# Queue recovery and discreet controls: 0.4.3 review candidate
+
+After the pass-3 checkpoint, the human explicitly authorized **one additional repair and verification round without resetting counts**. This candidate addresses only QC-R1-001's remaining recognized-ad-source failure and affected queue/media regressions. It is author-checked and awaits the same separate reviewer's targeted **pass 4**, then coordinator acceptance. Cumulative history remains **3 completed review passes / 2 completed repair-verification rounds**; repair round 3 is submitted under the recorded maximum of **4 passes / 3 rounds**. An unresolved blocker at that limit requires another human checkpoint; no pass 5 is authorized.
+
+## Recognized ad-source repair
+
+The media tracker keeps a document-local set of every source actually observed under recognized ad/unidentified state, independently of the prior content-source boundary. Marker removal, multiple ads, empty/load/metadata cycles and replacement media nodes cannot make one of those known sources into the queued target. Ads no longer overwrite the remembered content identity or its transition boundary. A fresh document or genuinely distinct, non-excluded target can still establish content identity. Automatic queue continuation uses the same media-identity predicate, so native ending of known ad media after marker removal cannot advance the queue either. No queue/storage schema, permissions, unrelated UI or accepted routing guidance changed.
+
+The frozen runtime reproduced the defect before correction: **18 of 20 unit tests passed, two new ad-source regressions failed**, and an isolated real-native-media fixture removed A/B after a recognized ad marker cleared. The failure reports and exact executed harness snapshot are preserved. With the repair, **20 unit tests and 15 targeted fixture outcomes passed**, alongside **28 broad fixture outcomes** and **10 live playback/coexistence checks**. The new native fixture uses deterministic YouTube HTML/native WAV media: it recognizes two distinct ad sources, clears each marker while the source remains unchanged, keeps every queue item, rejects empty-source/replacement-node replay of an earlier ad, blocks native ad-media ending from automatic advancement, then confirms a genuinely distinct target. It is **fixture evidence, not an actual public-ad marker-clear reproduction**.
+
+Affected signed-out live queue evidence was revalidated: the public 19.021-second source played naturally from **0.87746 s** to a trusted native end at **19.021 s**, with no seeking; exactly one NEXT_QUEUE selected the intended public destination, whose distinct loaded non-ad media was unpaused at **0.343168 s**, and queue consumption was verified. All **5 live queue/control checks passed**. Two failed setup attempts remain preserved: the first reached and consumed the destination but failed an unrelated destination autoplay-preference change; the second could not click the hidden source control. Final setup pauses/hovers the source to reveal controls and asserts native autoplay off immediately before both source-end experiments. Destination playback and consumption assertions are unchanged. No further retry is planned.
+
+Fresh runs therefore provide **20 units, 43 fixture outcomes and 15 live checks** on the new runtime. The earlier **14 live layout checks** remain bounded evidence for unchanged layout dependencies; they are not counted as a new 0.4.3 layout run. Exact content equality outside the ended guard, unchanged appearance/UI/CSS artifacts, unchanged non-queue core functions and the unchanged layout harness support that reuse. Current fixtures recheck narrow/fullscreen/cinema/input geometry. `repair3-layout-reuse.json` records the scope and limits; no validation-selection mechanism or review policy changed.
+
+The 15-outcome fixture report has its exact executed harness archived. Subsequent harness edits affect only live setup: with `live=false`, the changed branches are not executed and the remaining text is identical. `repair3-fixture-harness-reuse.json` verifies that equivalence and snapshot hash; runtime/build hashes match the final candidate. This avoids an unchanged-media rerun while retaining reproducible evidence.
+
+Exact final evidence: `test-results/queue-controls-fixture-1792248356741/report.json`, `test-results/queue-controls-live-1792248769908/report.json`, `test-results/compatibility-1792248489364/report.json` and stable private `repair3-browser-report.json`; commands/hashes/limits in `.investigation-tools/workflow/queue-controls/repair3-evidence-index.json`. Every browser launch/restart was headless, isolated and used `--mute-audio`; no personal profile, desktop input, protection or system-audio changes. Existing tools/allowances only, with selected unmodified Enhancer 3.0.19 in the compatibility run.
+
+Local **0.4.3** ZIP: `dist/smarttube-browser-extension-0.4.3.zip`, SHA-256 **475dd3ac088279ffd58cf41255a5b742ca1850a77bec0b8e699547b730ffb580**. All **17** file entries match build and all extension sources match built copies; historical packages remain unchanged. No release, push or normal-profile installation occurred. Membership/popup fixes remain closed from earlier review; the remaining repair and current live evidence await non-author/coordinator verification. Normal-profile 0.4.3, Chrome/Edge, broader layouts/accessibility, native action-popup UI and actual public-ad marker-clear behavior remain unrun/outside this evidence.
+
+## Historical 0.4.2 checkpointed candidate
 
 Separate targeted pass 2 closed QC-R1-003 (popup lifetime) and verified the bounded 0.4.1 live natural-end scenario. Two original high blockers remained; this is their final authorized repair batch, submitted for pass 3 verification. No author acceptance or additional review round is claimed. Previous candidates, findings and evidence remain historical below.
 
-## Final scoped corrections
+### Final scoped corrections
 
 **QC-R1-001:** the tracker preserves a nonempty source boundary across URL changes, `loadstart`, `emptied` and metadata. Loading/metadata events cannot authorize the unchanged old source. It still rejects the old source if it returns after an intervening different source. The initial document URL is captured before asynchronous imports. A genuinely different target source, or a fresh document completing its initial load, can establish association; unknown/ambiguous media stays queued. Initial ad media alone cannot confirm content; a distinct later content source can. Unit and actual Brave fixture regressions exercise unchanged-source reloads, empty-source cycles, never-loaded target, later genuine source, copied old-source media and fresh documents.
 
@@ -18,11 +38,11 @@ Local package **0.4.2**: `dist/smarttube-browser-extension-0.4.2.zip`, SHA-256 *
 
 Cumulative review: **2 passes / 1 completed repair-verification round**; final repair round 2 awaits targeted pass 3. If blockers remain at that limit, checkpoint for the human; the coordinator cannot extend or reset it. Reviewer verification and coordinator acceptance remain pending. Normal-profile 0.4.2 installation, Chrome/Edge, broader layouts/accessibility, native action-popup UI and real sponsor-bearing content remain unrun/outside this evidence. No push, release or archive occurred.
 
-## Historical 0.4.1 repair candidate
+### Historical 0.4.1 repair candidate
 
 Repair round 1 addresses all three findings from separate non-author pass 1. The repairs below are author-verified; reviewer verification and coordinator acceptance remain pending. No release or normal-profile installation was performed. The original 0.4.0 evidence and failures are preserved below.
 
-### Scoped repairs and evidence
+#### Scoped repairs and evidence
 
 - **QC-R1-001 — media transition:** URL changes no longer associate still-playing old media with a queued destination. Confirmation requires a fresh watch document or an observed media source/load transition, loaded unpaused non-ad media, a positive playback position and a played range. The old media, a copied node with the same source, or a stray metadata event cannot confirm a URL-first target. A real later reload can confirm it. If the transition is ambiguous, the queue stays saved.
 - **QC-R1-002 — queue membership:** before removal or consumption, invalidate every session receipt referencing the affected origin/target IDs. A later deliberate re-add cannot be consumed by a stale second tab. Unrelated navigation cancels that tab's receipt. Invalidation precedes the local write so interruption may retain entries for manual recovery; it does not delete new memberships. Existing queue/schema and permissions are unchanged. Tests cover both origin and target remove/re-add, two tabs, diversion, delayed confirmation and worker restart with session state retained.
@@ -39,11 +59,11 @@ Local package **0.4.1**: `dist/smarttube-browser-extension-0.4.1.zip`, SHA-256 *
 
 Pass 1 found three blockers; the owner submits all three repairs together for targeted pass 2 verification. No blocker is author-closed. The cumulative budget remains one comprehensive review plus at most two repair/verification rounds. Normal-profile 0.4.1 installation was unrequested/unrun; Chrome/Edge, broader layouts/accessibility, native action-popup UI and real sponsor-bearing content remain outside these checks. No push, release, chat/agent creation or archive occurred.
 
-### Historical 0.4.0 candidate
+#### Historical 0.4.0 candidate
 
 This is a local implementation and author self-check checkpoint dated 17 October 2026. Separate non-author review is required for queue storage/recovery. Actual live end-to-end queue completion remains unverified. No publication or normal-profile installation was performed; earlier 0.3.0 normal-profile acceptance does not accept this version.
 
-#### Behavior
+##### Behavior
 
 The player normally shows a subdued 30 × 28 px ST button in its upper-right corner. Click/tap or keyboard Enter/Space opens the existing playback tools, status and Undo. The panel wraps and scrolls within the player, reserving space above native bottom controls. Hidden tools have no hit targets or tab stops. Focused tools remain open until deliberately closed; Escape closes them and returns focus to ST before cinema handles a further Escape. No animation was introduced.
 
@@ -51,7 +71,7 @@ Queue selection excludes the current video and retains the saved entries until t
 
 Delayed/failed navigation and unavailable content retain the queue. The source entry, if queued, also remains until destination confirmation. Retry through the popup's queue list or explicitly remove unwanted entries. There is no automatic skip of unavailable content. Browser restart clears session receipts and retains the queue; an interrupted selection may consequently remain queued for manual retry/removal. Automatic continuation stays opt-in and yields to whole-video/A–B looping. Repeated ended events cannot issue repeated automatic attempts for the same ended playback; deliberate replay or Next can try again. A slow navigation blocks overlapping Next requests for ten seconds. Popup opening is also guarded against overlapping clicks.
 
-#### Author verification
+##### Author verification
 
 All test-owned browsers used headless isolated Brave **155.0.8059.85** and `--mute-audio`, including process restarts. No personal browser data, desktop input, system audio changes, paid services or new dependencies were used. Live coexistence used the selected unmodified Enhancer **3.0.19**, with a fresh 1× override configuration.
 
@@ -69,7 +89,7 @@ The live completion attempts encountered initial restricted DNS, a consent-dialo
 
 Author screenshot inspection found native-control overlap in the initial narrow expanded panel despite its earlier containment check. The panel height and acceptance check were corrected before the final runs; the final narrow screenshot leaves at least 55 px below the panel. Other preserved pre-candidate failures were obsolete harness assumptions about panel visibility after Escape/SPA and post-navigation layout readiness. No acceptance review passes were consumed by these author self-checks.
 
-#### Package and remaining gates
+##### Package and remaining gates
 
 Local package: `dist/smarttube-browser-extension-0.4.0.zip`, SHA-256 **a9d40151b96017a212d6fca6956c4a48c301f4cc08bc1557506d8f07889f6553**. All **17** file entries match the build; all extension source files match their built copies. The historical 0.3.0 ZIP was preserved. Exact file hashes are in `.investigation-tools/workflow/queue-controls/package-identity.json` and per-run reports.
 

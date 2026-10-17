@@ -1,5 +1,9 @@
 # Validation status
 
+## 0.4.3 recognized-ad-source review candidate
+
+One explicit human-authorized extra round addresses the remaining pass-3 blocker without resetting counts. Author checks passed: 20 unit tests, 28 broad and 15 targeted fixture outcomes, 10 live playback/coexistence and 5 live natural-end queue/control checks. The exact recognized-ad/marker-clear failure is reproduced and corrected under deterministic native-media fixtures; actual public-ad marker-clear behavior is not claimed. Earlier 14 live layout checks are retained only for unchanged layout dependencies, with current fixture geometry and source/evidence identity proof. See [the current scope, preserved failures, reuse rationale and package](QUEUE_CONTROLS.md). Targeted separate pass 4 and coordinator acceptance remain pending; no further round is authorized if blockers remain. Earlier checkpoint records below are historical.
+
 ## 0.4.2 final scoped repair candidate
 
 The two remaining pass-2 blockers have author-verified corrections submitted together for the final permitted pass-3 verification. Final-source checks passed: 18 unit tests, 28 broad and 14 queue/control fixture outcomes, 10 live compatibility, 14 live layout and 5 live queue/control checks. Natural-end queue continuation was revalidated on the changed runtime. Exact source/package evidence, retained preliminary failure and limits are in [the queue/control record](QUEUE_CONTROLS.md). No acceptance is claimed; an unresolved blocker after this final round requires a human checkpoint. Earlier candidate records below remain historical.

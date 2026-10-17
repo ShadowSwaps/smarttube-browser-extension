@@ -44,10 +44,12 @@ const queue=()=>worker.evaluate(async()=>(await chrome.storage.local.get('queue'
 async function ready() {
  await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return v?.readyState>=2 && Number.isFinite(v.duration)&&v.duration>0&&!v.closest('.ad-showing,.ad-interrupting');},{},{timeout:35000});
  await page.waitForSelector('#smarttube-browser-toolbar');
- if(live) {
+ if(live && new URL(page.url()).searchParams.get('v')===A) {
+  await page.locator('#movie_player video').evaluate(v=>v.pause());
+  await page.locator('#movie_player').hover();
   const autoplay=page.locator('.ytp-autonav-toggle-button');
   await autoplay.waitFor({state:'attached',timeout:10000});
-  if(await autoplay.getAttribute('aria-checked')==='true') await autoplay.click();
+  if(await autoplay.getAttribute('aria-checked')==='true') await autoplay.click({timeout:5000});
   await page.waitForFunction(()=>document.querySelector('.ytp-autonav-toggle-button')?.getAttribute('aria-checked')==='false',{},{timeout:5000});
   assert.equal(await autoplay.getAttribute('aria-checked'),'false','Disable native site autoplay in this test-owned profile to isolate extension queue behavior');
  }
@@ -57,6 +59,7 @@ async function ended() {
  // Live: let a short public source play through naturally. Fixtures seek near
  // the end of their local media, then wait for a trusted native ended event.
  if(live) {
+  assert.equal(await page.locator('.ytp-autonav-toggle-button').getAttribute('aria-checked'),'false','Native autoplay must be off on the source before its natural-end experiment');
   const source=await page.locator('#movie_player video').evaluate(v=>({duration:v.duration,position:v.currentTime,seeking:v.seeking,src:v.currentSrc}));
   assert(source.duration>0 && source.duration<=45 && source.position<source.duration*.25 && !source.seeking,'Live completion must start early in demonstrably short content without seeking');
   report.events.push({naturalPlayback:source});
@@ -218,6 +221,44 @@ try {
   await page.goto(`https://www.youtube.com/watch?v=${B}`);await ready();
   for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
   assert.deepEqual(await queue(),[C,A]);await shot('new-origin-retained');await control.close();
+ });
+ if(!live) await check('Recognized ad media cannot confirm or advance after marker clears; distinct target later confirms',async()=>{
+  await state({enabled:true,toolbar:true,autoQueue:false},[A,B,C]);
+  await page.goto(`https://www.youtube.com/watch?v=${A}`);await ready();
+  const control=await context.newPage();await control.goto(`chrome-extension://${new URL(worker.url()).hostname}/options.html`);await page.bringToFront();
+  const tabId=await control.evaluate(async()=>{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return tab.id;});
+  await control.evaluate(({tabId,A})=>chrome.runtime.sendMessage({type:'NEXT_QUEUE',currentVideoId:A,tabId}),{tabId,A});
+  await page.locator('video').evaluate(v=>{v.loop=true;return v.play();});
+  await page.evaluate(id=>{history.pushState({},'',`/watch?v=${id}`);document.dispatchEvent(new Event('yt-navigate-finish'));},B);
+  const mediaReady=()=>page.waitForFunction(()=>{const v=document.querySelector('video');return v?.readyState>=2&&!v.paused&&v.currentTime>0&&v.played.length>0;});
+  const recognizedSources=[];
+  for(const ad of ['one','two']) {
+   await page.evaluate(()=>document.querySelector('#movie_player').classList.add('ad-showing'));
+   await page.locator('video').evaluate((v,ad)=>{v.src=`/fixture.wav?recognized-ad=${ad}`;v.load();return v.play();},ad);
+   await mediaReady();await page.waitForTimeout(650);
+   const recognizedSource=await page.locator('video').evaluate(v=>v.currentSrc);
+   assert(!recognizedSources.includes(recognizedSource),'Each fixture ad must have a distinct source');recognizedSources.push(recognizedSource);
+   await page.evaluate(()=>document.querySelector('#movie_player').classList.remove('ad-showing'));
+   await page.waitForTimeout(800);assert.equal(await page.locator('video').evaluate(v=>v.currentSrc),recognizedSource);
+   assert.deepEqual(await queue(),[A,B,C],'marker removal with unchanged recognized ad source must retain every queue item');
+   report.events.push({fixtureRecognizedAd:ad,recognizedSource,queueAfterMarkerClear:await queue()});
+   if(ad==='one') {
+    await worker.evaluate(()=>chrome.storage.local.set({settings:{enabled:true,toolbar:true,autoQueue:true}}));
+    await page.waitForTimeout(600);
+    await page.locator('video').evaluate(v=>{v.loop=false;v.currentTime=v.duration-.3;return v.play();});
+    await page.waitForFunction(()=>document.querySelector('video')?.ended);await page.waitForTimeout(650);
+    assert.equal(new URL(page.url()).searchParams.get('v'),B,'native end of known ad media must not auto-advance');assert.deepEqual(await queue(),[A,B,C]);
+    report.events.push({fixtureKnownAdNativeEnd:true,url:page.url(),queue:await queue()});
+    await page.locator('video').evaluate(v=>{v.loop=true;});
+   }
+  }
+  await shot('recognized-ad-marker-cleared');
+  await page.locator('video').evaluate(v=>{v.removeAttribute('src');v.load();});await page.waitForTimeout(200);
+  await page.locator('video').evaluate(v=>{v.src='/fixture.wav?recognized-ad=one';v.load();return v.play();});await mediaReady();await page.waitForTimeout(700);assert.deepEqual(await queue(),[A,B,C]);
+  await page.locator('video').evaluate(v=>{const replacement=v.cloneNode(true);v.replaceWith(replacement);return replacement.play();});await mediaReady();await page.waitForTimeout(700);assert.deepEqual(await queue(),[A,B,C]);
+  await page.locator('video').evaluate(v=>{v.src='/fixture.wav?genuine-target=B-after-ads';v.load();return v.play();});await mediaReady();
+  for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
+  assert.deepEqual(await queue(),[C]);await shot('distinct-target-after-ads');await control.close();
  });
  report.result='passed';
 } catch(error) {report.result='failed';report.stage=stage;report.error=error.stack;report.url=page?.url();report.queue=await queue().catch(()=>null);report.media=await page?.locator('#movie_player video').first().evaluate(v=>({readyState:v.readyState,seeking:v.seeking,time:v.currentTime,duration:v.duration,paused:v.paused,ended:v.ended,error:v.error?.message,advertising:Boolean(v.closest('.ad-showing,.ad-interrupting'))})).catch(()=>null);await shot('failure').catch(()=>{});process.exitCode=1;}

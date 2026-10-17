@@ -24,6 +24,33 @@ test('URL-first SPA cannot associate old media or stray metadata with queued tar
   const late=createQueueMediaTracker('A'),lateMedia={currentSrc:'blob:old-A'};late.observe('B',lateMedia);assert.equal(late.matches('B',lateMedia),false,'initial document URL captured before imports cannot be replaced by later SPA URL');
   const ad={currentSrc:'blob:ad'},afterAd=createQueueMediaTracker('B');afterAd.observe(null,ad);afterAd.observe('B',ad);assert.equal(afterAd.matches('B',ad),false,'ending ad state alone cannot confirm ad media as target');ad.currentSrc='blob:content-B';afterAd.metadata('B',ad);assert(afterAd.matches('B',ad),'a distinct content source after the initial ad is real transition evidence');
 });
+test('all recognized ad sources remain excluded after marker removal alongside prior content boundary',() => {
+  const tracker=createQueueMediaTracker('A');let media={currentSrc:'blob:old-A'};
+  tracker.observe('A',media);tracker.observe('B',media);
+  for(const adSource of ['blob:ad-one','blob:ad-two','blob:ad-three']) {
+    media.currentSrc=adSource;tracker.observe(null,media);assert.equal(tracker.matches('B',media),false);
+    tracker.observe('B',media);assert.equal(tracker.matches('B',media),false,'clearing the ad marker cannot relabel recognized ad media');
+    tracker.loading('B',media);tracker.metadata('B',media);assert.equal(tracker.matches('B',media),false,'load/metadata do not authorize recognized ad source');
+    media.currentSrc='';tracker.loading(null,media);tracker.metadata('B',media);
+    media={currentSrc:adSource};tracker.observe('B',media);tracker.metadata('B',media);assert.equal(tracker.matches('B',media),false,'empty intervals and new nodes do not forget recognized ads');
+  }
+  for(const blocked of ['blob:old-A','blob:ad-one','blob:ad-two','blob:ad-three']) {
+    media={currentSrc:blocked};tracker.loading('B',media);tracker.metadata('B',media);assert.equal(tracker.matches('B',media),false,'both old content and every earlier ad remain excluded');
+  }
+  media={currentSrc:'blob:actual-B'};tracker.loading('B',media);tracker.metadata('B',media);assert(tracker.matches('B',media),'a distinct genuine target still confirms');
+});
+
+test('initial-document ads and later ads cannot confirm until distinct content, regardless of node/load sequence',() => {
+  const tracker=createQueueMediaTracker('B');let media={currentSrc:'blob:initial-ad'};
+  tracker.observe(null,media);tracker.observe('B',media);assert.equal(tracker.matches('B',media),false);
+  media.currentSrc='blob:second-ad';tracker.loading(null,media);tracker.metadata(null,media);tracker.observe('B',media);assert.equal(tracker.matches('B',media),false);
+  media={currentSrc:'blob:initial-ad'};tracker.metadata('B',media);assert.equal(tracker.matches('B',media),false,'earlier recognized ads remain blocked');
+  media.currentSrc='blob:content-B';tracker.metadata('B',media);assert(tracker.matches('B',media));
+  media.currentSrc='blob:midroll';tracker.observe(null,media);tracker.observe('B',media);assert.equal(tracker.matches('B',media),false);
+  media={currentSrc:'blob:second-ad'};tracker.loading('B',media);tracker.metadata('B',media);assert.equal(tracker.matches('B',media),false);
+  media.currentSrc='blob:content-B-resumed';tracker.metadata('B',media);assert(tracker.matches('B',media));
+});
+
 test('video identities reject external hosts and malformed IDs',() => {
   assert.equal(videoIdFromUrl('https://www.youtube.com/watch?v=abcdefghijk'),'abcdefghijk');
   assert.equal(videoIdFromUrl('https://www.youtube.com/shorts/abcdefghijk'),'abcdefghijk');
