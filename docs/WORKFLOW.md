@@ -45,6 +45,8 @@ A separate visible Brave window shares the Windows desktop and can still interru
 
 ### Existing normal-profile result
 
+0.3.0 adds the user-selected appearance controls. The same one-owner, usage-aware procedure retained the failed fixture setup evidence, reran affected checks after the final popup fix, and verified the package. Ten local tests, 28 fixture outcomes and ten live two-extension checks passed; source identities and self-review are in [the appearance evidence record](APPEARANCE_FEATURES.md). No native desktop input, model changes, agents, schedulers or paid resources were used for this increment. Normal-profile acceptance remains pending after manual reload.
+
 The selected speed failure is now addressed in 0.2.0 and verified in a fresh live two-extension profile. Playback features and limits are recorded in [the implementation and evidence map](ENHANCER_FEATURES.md). Acceptance of 0.2.0 in the human's normal profile awaits their manual extension/page reload; no native desktop input was used to deliver this update.
 
 The developer preview has historical disposable-Brave and signed-out live-site evidence in VALIDATION.md. User-authorized installation and normal-profile UI checks were subsequently performed on 17 October 2026. Installation and the tested controls, persistence and navigation scenarios passed, while a saved-speed override after video reload failed. Normal-profile acceptance is partial; see [the scenario report](validation/normal-brave-2026-10-17.md). Earlier fixture results do not supersede this observed failure.

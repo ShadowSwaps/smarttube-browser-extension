@@ -31,7 +31,7 @@ Loops belong to the current video, not a global saved setting. Full-video loopin
 
 ## Broader feature map
 
-These remaining items come from public documentation. Their listing is not an implementation or parity claim.
+These groups come from public documentation. The selected appearance increment is now implemented in 0.3.0; see [requirements, evidence and limits](APPEARANCE_FEATURES.md). Other rows remain deferred and this is not a claim of full parity.
 
 | Feature group | Status / next constraint |
 | --- | --- |
@@ -40,9 +40,9 @@ These remaining items come from public documentation. Their listing is not an im
 | Preferred quality, frame-rate/codec selection | Deferred; requires supported player capability discovery and fallback |
 | Background autoplay / stop behaviour | Deferred; define interaction with queue and browser policies |
 | Mini player / pop-up player | Deferred; compare native picture-in-picture and embedded playback boundaries |
-| Cinema mode / wider player | Deferred appearance increment |
-| Hide comments, related videos, chat, Shorts, end cards | Deferred appearance increment with reversible selectors |
-| Video filters / themes | Deferred original styling; no copied theme assets |
+| Cinema mode / wider player | Cinema dimming implemented in 0.3.0; player resizing remains deferred |
+| Hide comments, related videos, chat, Shorts, end cards | Six reversible switches implemented in 0.3.0, including info cards; selector coverage is bounded |
+| Video filters / themes | Four original video filters implemented in 0.3.0; themes remain deferred, no copied assets |
 | Screenshots | Deferred; validate canvas/media-origin restrictions and output |
 | Configurable shortcuts | Deferred; preserve YouTube and other extension bindings |
 | Custom script execution | Not selected; would change the execution/security boundary |

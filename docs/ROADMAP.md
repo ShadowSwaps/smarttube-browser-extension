@@ -10,7 +10,7 @@ JavaScript ES modules with JSDoc-friendly contracts replace the earlier proposed
 
 ## Next extension work
 
-1. Accept the 0.2.0 speed fix and playback controls in the normal profile after manual extension reload. The isolated live two-extension check now passes; historical [normal-profile evidence](validation/normal-brave-2026-10-17.md) remains preserved. See the [implemented increment and broader Enhancer backlog](ENHANCER_FEATURES.md). Preserve existing protections and extensions.
+1. Accept 0.3.0 in the normal profile after manual extension/page reload: speed fix, playback controls, cinema, picture filters and distraction switches. Isolated live two-extension checks pass; historical [normal-profile evidence](validation/normal-brave-2026-10-17.md) remains preserved. See the [appearance increment](APPEARANCE_FEATURES.md) and [broader Enhancer backlog](ENHANCER_FEATURES.md). Preserve existing protections and extensions.
 2. Extend coverage of queue transitions, videos with actual sponsor segments, Shorts, accessibility, and alternate YouTube layouts. Add regressions for observed failures.
 3. Validate Chrome and Edge separately before claiming equivalent browser coverage.
 4. Improve optional timeline markers, channel exclusions, and queue management based on selected priorities.

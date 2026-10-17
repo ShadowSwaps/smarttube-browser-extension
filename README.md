@@ -2,7 +2,7 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.2.0 developer preview.** Fixes the startup speed reset and adds looping, volume and opt-in wheel controls. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19; normal-profile acceptance of this update is pending. See [playback evidence and feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
+**Status: v0.3.0 developer preview.** Adds cinema mode, video filters and reversible distraction controls, alongside the startup speed fix and playback tools. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19; normal-profile acceptance of this update is pending. See [appearance evidence](docs/APPEARANCE_FEATURES.md) and the [playback feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
 
 ## Features
 
@@ -11,6 +11,7 @@ A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. I
 - Opt-in SponsorBlock skipping, category selection, and an Undo skip control.
 - Default playback speed, optional toolbar, and optional automatic queue continuation.
 - Whole-video or A–B looping, native volume/mute controls, and optional mouse-wheel controls.
+- Cinema dimming, brightness/contrast/saturation/grayscale filters, and switches to hide comments, related videos, chat, Shorts shelves, end screens and info cards.
 - Settings saved locally; no account, telemetry, API key, subscription, or hosted backend.
 
 This is an independent community project, not an official SmartTube port. YouTube supplies playback and account features. This version does not provide SmartTube's independent player, casting, full TV interface, or a promise of video-ad removal. If you already use SponsorBlock, enable sponsor skipping in only one extension to avoid conflicts.
@@ -32,6 +33,8 @@ The toolbar is in the top-left corner of the player and becomes more visible on 
 For a range loop, choose **A** at the start and **B** at the end; **Clear** removes the range. Loop ranges reset when the video changes. Enable **Mouse-wheel playback controls** in settings for **Alt + wheel** speed changes and **Alt + Shift + wheel** volume changes over the player. The browser test processes are always muted; this does not mute ordinary extension use.
 
 The saved speed is reconciled for up to four seconds at startup, with at most four corrections. Deliberate speed actions take over immediately. If another extension should own the default, turn off **Apply saved playback speed**.
+
+Click **Cinema** in the toolbar or **Cinema mode** in the popup to dim the page around the player. Press **Escape** or click the dimmed page to exit for that tab. Settings can also start videos in cinema mode; dimming suspends during fullscreen. Open **Picture and distractions** in settings or the popup for video filters and individual hide switches. **Reset video filters** disables filters and restores neutral values. Every appearance feature starts off; settings are saved on this device. Hiding uses known YouTube layout selectors and may need updates as the site changes.
 
 Updates are manual: replace your source folder with a newer version, select Reload on the extensions page, and refresh YouTube. Existing local settings are retained. Uninstalling the extension removes its local storage.
 

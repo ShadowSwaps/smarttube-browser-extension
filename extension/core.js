@@ -3,9 +3,14 @@ export const CATEGORIES = Object.freeze({
   sponsor: 'Sponsors', selfpromo: 'Self promotion', interaction: 'Subscribe reminders',
   intro: 'Introductions', outro: 'End cards', music_offtopic: 'Non-music sections'
 });
+export const APPEARANCE_BOOLEANS = Object.freeze(['cinema','filtersEnabled','hideComments','hideRelated','hideChat','hideShorts','hideEndCards','hideInfoCards']);
+export const FILTER_LIMITS = Object.freeze({filterBrightness:[50,150,100],filterContrast:[50,150,100],filterSaturation:[0,200,100],filterGrayscale:[0,100,0]});
 export const DEFAULT_SETTINGS = Object.freeze({
   enabled: true, sponsorEnabled: false, categories: ['sponsor'],
-  speed: 1, applySpeed: true, wheelControls: false, toolbar: true, autoQueue: false
+  speed: 1, applySpeed: true, wheelControls: false, toolbar: true, autoQueue: false,
+  cinema:false, filtersEnabled:false, hideComments:false, hideRelated:false,
+  hideChat:false, hideShorts:false, hideEndCards:false, hideInfoCards:false,
+  filterBrightness:100, filterContrast:100, filterSaturation:100, filterGrayscale:0
 });
 export const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 export function videoIdFromUrl(value) {
@@ -19,8 +24,11 @@ export function videoIdFromUrl(value) {
 }
 export function sanitizeSettings(raw = {}) {
   const value = { ...DEFAULT_SETTINGS };
-  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue', 'applySpeed', 'wheelControls']) {
+  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue', 'applySpeed', 'wheelControls', ...APPEARANCE_BOOLEANS]) {
     if (typeof raw?.[key] === 'boolean') value[key] = raw[key];
+  }
+  for (const [key,[min,max]] of Object.entries(FILTER_LIMITS)) {
+    if (typeof raw?.[key] === 'number' && Number.isFinite(raw[key])) value[key] = Math.round(Math.max(min,Math.min(max,raw[key])));
   }
   if (typeof raw?.speed === 'number' && Number.isFinite(raw.speed)) {
     value.speed = Math.round(Math.min(3, Math.max(0.25, raw.speed)) * 100) / 100;
@@ -29,6 +37,10 @@ export function sanitizeSettings(raw = {}) {
     ? [...new Set(raw.categories.filter(item => Object.hasOwn(CATEGORIES, item)))]
     : [...DEFAULT_SETTINGS.categories];
   return value;
+}
+export function videoFilterCss(settings) {
+  const clean = sanitizeSettings(settings);
+  return clean.filtersEnabled ? `brightness(${clean.filterBrightness}%) contrast(${clean.filterContrast}%) saturate(${clean.filterSaturation}%) grayscale(${clean.filterGrayscale}%)` : '';
 }
 export function sanitizeQueue(raw) {
   if (!Array.isArray(raw)) return [];

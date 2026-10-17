@@ -3,6 +3,7 @@
   if (globalThis.__smarttubeBrowserLoaded) return;
   globalThis.__smarttubeBrowserLoaded = true;
   const {sanitizeSettings, normalizeSegments, segmentAt, videoIdFromUrl, CATEGORIES} = await import(chrome.runtime.getURL('core.js'));
+  const {createAppearance} = await import(chrome.runtime.getURL('appearance.js'));
   let settings = sanitizeSettings();
   let savedEnabled = settings.enabled;
   let video = null, videoId = null, segments = [], generation = 0, status = 'Sponsor skipping is off';
@@ -11,6 +12,9 @@
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;
   let lastSkip = null, undoUntil = 0, sessionDisabled = false;
+  let cinemaOverride = null;
+  const cinemaEnabled = () => settings.enabled && Boolean(videoId) && (cinemaOverride ?? settings.cinema);
+  const appearance = createAppearance({onExitCinema:() => {cinemaOverride = false; sync();}});
   const send = message => chrome.runtime.sendMessage(message).catch(() => ({ok:false}));
   const title = () => document.querySelector('h1.ytd-watch-metadata')?.textContent?.trim()
     || document.title.replace(/ - YouTube$/, '').slice(0,200);
@@ -26,6 +30,7 @@
     shadow.querySelector('[data-action="loop"]').textContent = loopEnabled ? 'Loop on' : 'Loop';
     shadow.querySelector('[data-action="loop-a"]').textContent = loopStart === null ? 'A' : `A ${Math.floor(loopStart)}s`;
     shadow.querySelector('[data-action="loop-b"]').textContent = loopEnd === null ? 'B' : `B ${Math.floor(loopEnd)}s`;
+    shadow.querySelector('[data-action="cinema"]').setAttribute('aria-pressed',String(cinemaEnabled()));
     const undo = shadow.querySelector('[data-action="undo"]');
     undo.hidden = !lastSkip;
   }
@@ -92,6 +97,7 @@
     else if (name === 'volume-down') action('volume',video.volume-.1);
     else if (name === 'volume-up') action('volume',video.volume+.1);
     else if (name === 'mute') video.muted = !video.muted;
+    else if (name === 'cinema') { cinemaOverride = !cinemaEnabled(); sync(); }
     else if (name === 'loop') {
       if (!Number.isFinite(video.duration) || video.closest('.ytp-live') || isAd()) return {ok:false,error:'Looping is available on regular videos.'};
       loopEnabled = !loopEnabled; applyLoop();
@@ -137,7 +143,7 @@
         :host{position:absolute;left:12px;top:12px;z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;max-width:calc(100% - 24px)}
         :host([hidden]){display:none} .bar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px;background:#151921eb;border:1px solid #485364;border-radius:10px;box-shadow:0 4px 18px #0005;opacity:.3;transition:opacity .15s}
         .bar:hover,.bar:focus-within{opacity:1} strong{color:#7be0c7;margin:0 5px} button{border:0;border-radius:5px;color:inherit;background:#28313e;padding:6px 8px;cursor:pointer;font:inherit} button:hover{background:#3d4a5c} button:focus-visible{outline:2px solid #7be0c7;outline-offset:2px} [hidden]{display:none} .status{max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 5px}@media(max-width:650px){.status{display:none}}
-        </style><div class="bar" aria-label="SmartTube playback tools"><strong>ST</strong><button data-action="seek-back" aria-label="Rewind ten seconds">−10s</button><button data-action="toggle" aria-label="Play or pause">▶ / Ⅱ</button><button data-action="seek-forward" aria-label="Forward ten seconds">+10s</button><button data-action="speed" data-speed aria-label="Cycle playback speed">1×</button><button data-action="volume-down" aria-label="Lower volume ten percent">Vol−</button><button data-action="mute" aria-label="Mute or unmute">100%</button><button data-action="volume-up" aria-label="Raise volume ten percent">Vol+</button><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="undo" hidden>Undo skip</button><span class="status" role="status" data-status></span></div>`;
+        </style><div class="bar" aria-label="SmartTube playback tools"><strong>ST</strong><button data-action="seek-back" aria-label="Rewind ten seconds">−10s</button><button data-action="toggle" aria-label="Play or pause">▶ / Ⅱ</button><button data-action="seek-forward" aria-label="Forward ten seconds">+10s</button><button data-action="speed" data-speed aria-label="Cycle playback speed">1×</button><button data-action="volume-down" aria-label="Lower volume ten percent">Vol−</button><button data-action="mute" aria-label="Mute or unmute">100%</button><button data-action="volume-up" aria-label="Raise volume ten percent">Vol+</button><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="undo" hidden>Undo skip</button><span class="status" role="status" data-status></span></div>`;
       shadow.addEventListener('click', event => {
         event.stopPropagation();
         const button = event.target.closest('button');
@@ -186,10 +192,11 @@
       if (key !== speedKey) { speedKey = key; resetSpeed(); }
       mount(); applySpeed(); tick();
     } else if (host) host.hidden = true;
+    appearance.update({video:videoId ? video : null,settings,cinemaEnabled:cinemaEnabled()});
   }
   chrome.runtime.onMessage.addListener((message,sender,respond) => {
     if (sender.id !== chrome.runtime.id) return;
-    if (message.type === 'PLAYER_STATUS') respond({ok:true,videoId,title:videoId ? title() : '',paused:video?.paused ?? true,position:video?.currentTime || 0,duration:Number.isFinite(video?.duration) ? video.duration : 0,speed:video?.playbackRate || settings.speed,volume:video?.volume ?? 1,muted:video?.muted ?? false,loopEnabled,loopStart,loopEnd,status});
+    if (message.type === 'PLAYER_STATUS') respond({ok:true,videoId,title:videoId ? title() : '',paused:video?.paused ?? true,position:video?.currentTime || 0,duration:Number.isFinite(video?.duration) ? video.duration : 0,speed:video?.playbackRate || settings.speed,volume:video?.volume ?? 1,muted:video?.muted ?? false,loopEnabled,loopStart,loopEnd,cinema:cinemaEnabled(),status});
     if (message.type === 'CONTROL') respond(action(message.action,message.value));
   });
   chrome.storage.onChanged.addListener((changes,area) => {
@@ -200,7 +207,9 @@
     if (sessionDisabled) settings.enabled = false;
     if (!settings.enabled) clearLoop();
     if (settings.speed !== old.speed || settings.applySpeed !== old.applySpeed || settings.enabled !== old.enabled) resetSpeed();
-    loadSegments(); sync();
+    if (settings.cinema !== old.cinema) cinemaOverride = null;
+    if (settings.enabled !== old.enabled || settings.sponsorEnabled !== old.sponsorEnabled || settings.categories.join(',') !== old.categories.join(',')) loadSegments();
+    sync();
   });
   document.addEventListener('keydown',event => {
     const element = event.composedPath()[0];

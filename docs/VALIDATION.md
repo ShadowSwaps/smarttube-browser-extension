@@ -1,5 +1,11 @@
 # Validation status
 
+## 0.3.0 appearance update
+
+Ten local tests, permission/syntax checks, build, 28 Brave fixture outcomes and ten live public-video checks passed on 17 October 2026. The live checks used actual Enhancer 3.0.19 with fresh settings; every test browser was headless and muted. Cinema, four filters and six distraction switches have bounded evidence in [the appearance requirements and validation record](APPEARANCE_FEATURES.md), including exact source/package identities, preserved harness failure, self-review and remaining coverage. Playback regressions and a full fixture browser-process restart passed. All 17 ZIP file entries match the build.
+
+0.3.0 normal-profile acceptance remains pending. Live comments/related containers were exercised; other hide selectors and recognized fullscreen suspension were fixture-tested. Historical results below retain their original scope.
+
 ## 0.2.0 playback update
 
 Nine local tests, manifest/syntax checks, a dependency-free build and 21 assembled Brave fixture outcomes passed on 17 October 2026. Six live public-video checks passed in an isolated headless profile with actual Enhancer 3.0.19 enabled, covering saved speed before/after reload, volume/mute, wheel controls, range loops and deliberate speed changes. All owned browser processes used `--mute-audio`. See [candidate identities, scenarios, preserved failures and scope](ENHANCER_FEATURES.md).
@@ -42,4 +48,4 @@ This was author-performed UI verification and self-review, not independent revie
 
 ## Remaining coverage
 
-Normal-profile acceptance remains partial because the saved-speed failure is open. Normal-profile sponsor skipping and full browser-process restart persistence were not exercised. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.
+Normal-profile acceptance remains partial: the historical saved-speed failure is fixed in isolated testing but still awaits a normal-profile recheck. 0.3.0 appearance controls also await normal-profile acceptance. Normal-profile sponsor skipping and full browser-process restart persistence were not exercised. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.

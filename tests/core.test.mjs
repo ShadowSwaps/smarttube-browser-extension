@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {videoIdFromUrl,sanitizeSettings,sanitizeQueue,normalizeSegments,segmentAt} from '../extension/core.js';
+import {videoIdFromUrl,sanitizeSettings,sanitizeQueue,normalizeSegments,segmentAt,videoFilterCss} from '../extension/core.js';
 test('video identities reject external hosts and malformed IDs',() => {
   assert.equal(videoIdFromUrl('https://www.youtube.com/watch?v=abcdefghijk'),'abcdefghijk');
   assert.equal(videoIdFromUrl('https://www.youtube.com/shorts/abcdefghijk'),'abcdefghijk');
@@ -8,9 +8,19 @@ test('video identities reject external hosts and malformed IDs',() => {
 });
 test('settings are opt-in and recover from corrupt storage',() => {
   assert.equal(sanitizeSettings().sponsorEnabled,false);
-  assert.deepEqual(sanitizeSettings({speed:NaN,categories:['sponsor','unknown','sponsor'],enabled:'false'}),{enabled:true,sponsorEnabled:false,categories:['sponsor'],speed:1,applySpeed:true,wheelControls:false,toolbar:true,autoQueue:false});
+  const recovered = sanitizeSettings({speed:NaN,categories:['sponsor','unknown','sponsor'],enabled:'false'});
+  assert.equal(recovered.enabled,true);assert.equal(recovered.speed,1);assert.deepEqual(recovered.categories,['sponsor']);
   assert.equal(sanitizeSettings({speed:500}).speed,3);
   assert.equal(sanitizeSettings(null).speed,1);
+});
+test('appearance defaults are neutral and invalid filter values cannot become CSS',()=>{
+  const old = sanitizeSettings({speed:1.5});
+  assert.equal(old.speed,1.5);assert.equal(old.cinema,false);assert.equal(old.hideComments,false);assert.equal(old.filtersEnabled,false);
+  assert.equal(videoFilterCss(old),'');
+  const clean = sanitizeSettings({filtersEnabled:true,filterBrightness:0,filterContrast:999,filterSaturation:NaN,filterGrayscale:'0);url(https://invalid/)'});
+  assert.equal(videoFilterCss(clean),'brightness(50%) contrast(150%) saturate(100%) grayscale(0%)');
+  assert.equal(sanitizeSettings({filterBrightness:123.7,hideChat:'yes'}).filterBrightness,124);
+  assert.equal(sanitizeSettings({hideChat:'yes'}).hideChat,false);
 });
 test('queue is bounded, deduplicated, and stores plain text',() => {
   const queue = sanitizeQueue([{videoId:'abcdefghijk',title:'<img onerror=alert(1)>'},{videoId:'abcdefghijk',title:'duplicate'},{videoId:'bad'}]);

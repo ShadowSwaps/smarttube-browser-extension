@@ -8,8 +8,9 @@
     <section class="settings-card" aria-label="Playback tools">
 <div class="player-actions"><label for="volume">Volume <span id="volume-level">100%</span></label><input id="volume" type="range" min="0" max="100" step="1"><button id="mute" data-control="mute">Mute</button></div>
 <div class="loop-actions"><button id="loop" data-control="loop" aria-pressed="false">Loop</button><button data-control="loop-a" aria-label="Set loop start">Set A</button><button data-control="loop-b" aria-label="Set loop end">Set B</button><button data-control="loop-clear" aria-label="Clear loop range">Clear</button></div>
-<p class="muted" id="loop-range">Whole video · set A and B for a range</p></section>
+<div class="loop-actions"><button id="cinema" data-control="cinema" aria-pressed="false">Cinema mode</button></div><p class="muted" id="loop-range">Whole video · set A and B for a range</p></section>
 <section class="settings-card"><label class="toggle-row"><span><strong>Sponsor skipping</strong><small>Skip community-marked sponsor segments.</small></span><input id="sponsorEnabled" type="checkbox" role="switch"></label><p class="privacy-note">Opt-in lookup via SponsorBlock. <a href="https://sponsor.ajay.app/privacy/" target="_blank" rel="noopener noreferrer">Privacy</a></p><p id="sponsor-status" class="muted"></p></section>
+    <details class="settings-card"><summary>Picture and distractions</summary><div id="appearance-controls"></div></details>
     <section class="queue-section"><div class="section-title"><h2>Your queue <span id="queue-count" class="badge">0</span></h2><button id="add-current" class="text-button">+ Add current</button></div><ul id="queue" aria-label="Queued videos"></ul><p id="empty-queue" class="empty">Something worth watching next?<br>Add a video to keep it here.</p><button id="next" class="wide">Play next in queue →</button></section>
     <p id="feedback" role="status" aria-live="polite"></p>
   </main>

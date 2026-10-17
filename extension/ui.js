@@ -1,15 +1,23 @@
-import {CATEGORIES,sanitizeSettings,sanitizeQueue,formatTime} from './core.js';
+import {CATEGORIES,APPEARANCE_BOOLEANS,FILTER_LIMITS,sanitizeSettings,sanitizeQueue,formatTime} from './core.js';
 const $ = selector => document.querySelector(selector);
 const popup = document.body.dataset.view === 'popup';
 let state = {settings:sanitizeSettings(),queue:[]};
 let player = null, tabId = null;
+const filterDrafts = new Set();
 const send = message => chrome.runtime.sendMessage(message);
 function feedback(text) { $('#feedback').textContent = text; }
 function render() {
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls']) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
     const input = $(`#${key}`); if (input) input.checked = state.settings[key];
   }
   $('#speed').value = String(state.settings.speed);
+  for (const key of Object.keys(FILTER_LIMITS)) {
+    if (!filterDrafts.has(key)) {
+      $(`#${key}`).value = String(state.settings[key]);
+      $(`#${key}-value`).textContent = `${state.settings[key]}%`;
+    }
+    $(`#${key}`).disabled = !state.settings.filtersEnabled;
+  }
   for (const input of document.querySelectorAll('[data-category]')) input.checked = state.settings.categories.includes(input.dataset.category);
   if (!popup) return;
   $('#video-title').textContent = player?.videoId ? player.title : 'Open a video on YouTube';
@@ -23,6 +31,7 @@ function render() {
   $('#mute').textContent = player?.muted ? 'Unmute' : 'Mute';
   $('#loop').setAttribute('aria-pressed',String(player?.loopEnabled ?? false));
   $('#loop').textContent = player?.loopEnabled ? 'Loop on' : 'Loop';
+  $('#cinema').setAttribute('aria-pressed',String(player?.cinema ?? false));
   $('#loop-range').textContent = player?.loopStart !== null && player?.loopStart !== undefined
     ? `A ${formatTime(player.loopStart)}${player.loopEnd !== null ? ` → B ${formatTime(player.loopEnd)}` : ' · choose B after A'}` : 'Whole video · set A and B for a range';
   $('#queue-count').textContent = String(state.queue.length);
@@ -67,7 +76,34 @@ async function control(action,value) {
     await refreshPlayer();
   } catch { feedback('Refresh the YouTube tab to connect the player.'); }
 }
+function buildAppearanceControls() {
+  const root = $('#appearance-controls');
+  const addToggle = (key,label,help) => {
+    const row = document.createElement('label'); row.className = 'toggle-row';
+    const text = document.createElement('span'), strong = document.createElement('strong'); strong.textContent = label; text.append(strong);
+    if (help) { const small = document.createElement('small'); small.textContent = help; text.append(small); }
+    const input = document.createElement('input'); input.type = 'checkbox'; input.id = key; input.setAttribute('role','switch');
+    row.append(text,input);root.append(row);
+  };
+  if (!popup) addToggle('cinema','Start videos in cinema mode','Dim the page around the player. Escape or an outside click exits for this tab.');
+  addToggle('filtersEnabled','Enable video filters','Adjust the picture without changing your monitor settings.');
+  const labels = {filterBrightness:'Brightness',filterContrast:'Contrast',filterSaturation:'Saturation',filterGrayscale:'Grayscale'};
+  for (const [key,[min,max]] of Object.entries(FILTER_LIMITS)) {
+    const row = document.createElement('div'); row.className = 'filter-row';
+    const label = document.createElement('label'); label.htmlFor = key; label.textContent = labels[key];
+    const output = document.createElement('output'); output.id = `${key}-value`; output.setAttribute('for',key);
+    const input = document.createElement('input'); input.id = key; input.type = 'range';input.min = String(min);input.max = String(max);input.step = '1';
+    input.addEventListener('input',()=>{filterDrafts.add(key);output.textContent = `${input.value}%`;});
+    input.addEventListener('change',()=>{filterDrafts.delete(key);save({[key]:Number(input.value)});});
+    row.append(label,output,input);root.append(row);
+  }
+  const reset = document.createElement('button');reset.textContent = 'Reset video filters';reset.type = 'button';
+  reset.addEventListener('click',()=>{filterDrafts.clear();save({filtersEnabled:false,filterBrightness:100,filterContrast:100,filterSaturation:100,filterGrayscale:0});});root.append(reset);
+  const heading = document.createElement('h3');heading.textContent = 'Hide distractions';root.append(heading);
+  for (const [key,label] of Object.entries({hideComments:'Hide comments',hideRelated:'Hide related videos',hideChat:'Hide live chat',hideShorts:'Hide Shorts shelves',hideEndCards:'Hide end screens',hideInfoCards:'Hide info cards'})) addToggle(key,label);
+}
 async function init() {
+  buildAppearanceControls();
   if (!popup) {
     const fieldset = $('#categories');
     for (const [key,label] of Object.entries(CATEGORIES)) {
@@ -80,7 +116,7 @@ async function init() {
   const result = await send({type:'GET_STATE'});
   if (!result.ok) throw new Error();
   state = result;
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls']) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
     $(`#${key}`)?.addEventListener('change',event => save({[key]:event.target.checked}));
   }
   $('#speed').addEventListener('change',event => save({speed:Number(event.target.value)}));

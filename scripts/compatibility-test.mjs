@@ -12,7 +12,7 @@ const enhancer=path.resolve(process.env.ENHANCER_PATH), extension=path.resolve('
 const run=Date.now(), output=path.resolve(`test-results/compatibility-${run}`);
 await mkdir(output,{recursive:true});
 const report={kind:'live public YouTube, isolated two-extension profile',headless:true,audio:'--mute-audio',checks:[],candidate:{}};
-for(const file of ['manifest.json','content.js','core.js','ui.js']) report.candidate[file]=createHash('sha256').update(await readFile(path.join(extension,file))).digest('hex');
+for(const file of ['manifest.json','content.js','core.js','ui.js','appearance.js']) report.candidate[file]=createHash('sha256').update(await readFile(path.join(extension,file))).digest('hex');
 const context=await chromium.launchPersistentContext(path.resolve(`.local/brave-compatibility-${run}`),{
  executablePath:process.env.BRAVE_PATH || path.join(process.env.PROGRAMFILES || 'C:/Program Files','BraveSoftware/Brave-Browser/Application/brave.exe'),
  headless:true,args:[`--disable-extensions-except=${extension},${enhancer}`,`--load-extension=${extension},${enhancer}`,'--mute-audio','--autoplay-policy=no-user-gesture-required','--disable-brave-update','--disable-component-update']
@@ -88,6 +88,52 @@ try {
  await page.waitForTimeout(1000);
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),chosen);
  report.checks.push('Deliberate toolbar speed changes remain in effect.');
+ await page.locator('video').first().evaluate(v=>v.pause());
+ const ownOptions=await context.newPage();
+ await ownOptions.goto(`chrome-extension://${ours.id}/options.html`);
+ const previousFilter=await page.locator('video').first().evaluate(v=>({value:v.style.filter,priority:v.style.getPropertyPriority('filter')}));
+ await ownOptions.getByLabel('Enable video filters',{exact:false}).check();
+ for(const [label,value] of [['Brightness','110'],['Contrast','120'],['Saturation','0'],['Grayscale','30']]) {
+   await ownOptions.getByLabel(label,{exact:true}).fill(value);
+   await ownOptions.getByLabel(label,{exact:true}).dispatchEvent('change');
+   const key={Brightness:'filterBrightness',Contrast:'filterContrast',Saturation:'filterSaturation',Grayscale:'filterGrayscale'}[label];
+   await ownOptions.waitForFunction(({key,value})=>document.querySelector(`#${key}-value`).textContent===`${value}%`,{key,value});
+ }
+ await page.waitForFunction(()=>{const f=document.querySelector('video').style.filter;return f.includes('brightness(110%)')&&f.includes('contrast(120%)')&&f.includes('saturate(0%)')&&f.includes('grayscale(30%)');});
+ assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),chosen);
+ report.checks.push('All four picture settings apply to real media while retaining the deliberately chosen playback rate.');
+ await tools.getByRole('button',{name:'Toggle cinema mode'}).click();
+ await page.waitForSelector('#smarttube-cinema-backdrop');
+ assert.equal(await page.locator('#movie_player').evaluate(player=>{const r=player.getBoundingClientRect();return player.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true);
+ await page.screenshot({path:path.join(output,'cinema-filters.png')});
+ await page.keyboard.press('Escape');
+ await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
+ await tools.getByRole('button',{name:'Toggle cinema mode'}).click();
+ await page.locator('[data-cinema-panel="0"]').click({position:{x:3,y:3}});
+ await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
+ report.checks.push('Cinema preserves native-player hit testing and exits via Escape/outside click with both extensions loaded.');
+ report.liveDistractions=[];
+ for(const [label,selector] of [['Hide comments','ytd-watch-flexy #comments'],['Hide related videos','ytd-watch-flexy #related']]) {
+   const target=page.locator(selector).first();
+   await target.waitFor({state:'attached',timeout:5000});
+   const before=await target.evaluate(el=>getComputedStyle(el).display);
+   assert.notEqual(before,'none',`${label} target must initially have a visible display`);
+   await ownOptions.getByLabel(label,{exact:true}).check();
+   await page.waitForFunction(selector=>getComputedStyle(document.querySelector(selector)).display==='none',selector);
+   await ownOptions.getByLabel(label,{exact:true}).uncheck();
+   await page.waitForFunction(({selector,before})=>getComputedStyle(document.querySelector(selector)).display===before,{selector,before});
+   report.liveDistractions.push({label,selector,restoredDisplay:before});
+ }
+ report.checks.push('Live comments and related-video containers hide and restore through the real settings UI. Other distraction selectors are fixture-verified only.');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.waitForSelector('#smarttube-browser-toolbar');
+ await page.waitForFunction(()=>document.querySelector('video')?.style.filter.includes('brightness(110%)'));
+ await ownOptions.reload();
+ assert.equal(await ownOptions.getByLabel('Contrast',{exact:true}).inputValue(),'120');
+ await ownOptions.getByRole('button',{name:'Reset video filters'}).click();
+ await page.waitForFunction(previous=>{const v=document.querySelector('video');return v.style.filter===previous.value&&v.style.getPropertyPriority('filter')===previous.priority;},previousFilter);
+ await page.locator('video').first().evaluate(v=>{v.pause();v.currentTime=20;});
+ report.checks.push('Picture preferences survive a live page/options reload; Reset restores the original inline filter.');
  await page.screenshot({path:path.join(output,'player.png')});
  report.result='passed';
 } catch(error) {
