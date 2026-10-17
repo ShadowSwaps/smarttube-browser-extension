@@ -1,4 +1,16 @@
-# Queue recovery and discreet controls: 0.4.3 review candidate
+# Queue recovery and discreet controls: 0.4.3
+
+## Accepted runtime — 17 October 2026
+
+Separate non-author pass 4 and coordinator acceptance completed on `d5842686da40e1f171d8306fc28ad52845ca18cc` (tree `dd48b2f3138d91a6aa88b80815cc0ba41af8b4c2`). QC-R1-001 is closed verified; QC-R1-002/003 remain closed; the changed runtime's live natural-end gate was revalidated. The reviewer inspected the diff/dependencies/evidence, ran 20 units and syntax/permission checks, and verified actual-code multi-ad/empty/node/target diagnostics. The coordinator independently inspected 103 source/report/artifact checks and destination imagery. Cumulative history is **four reviews / three repair rounds / zero remaining**. This readiness work grants no further runtime repairs.
+
+Accepted coverage: 20 units, 43 fixtures, 15 fresh live checks; 14 historical layout checks retained solely for unchanged dependencies. The package and evidence below remain unchanged. Actual public-ad marker clearing is unrun; deterministic native-media evidence is separate. Later normal-profile evidence includes human-reported native popup, playback and Next plus delegated UI continuation/appearance checks, with failed-navigation and old-queue retention explicitly unrun. Readiness-documentation acceptance is pending. See [normal-Brave outcomes and limits](RELEASE_0.4.3.md#normal-brave-results). No publication or installation automation occurred.
+
+Keyboard qualification from the normal profile: first Escape exits native fullscreen; the next closes ST and returns focus. Outside native fullscreen, focused tools close before cinema handles a further Escape. Tab can leave the last tool for YouTube; the panel deliberately does not trap focus. No runtime change or new first-Escape fullscreen guarantee is introduced by this clarification.
+
+This dated acceptance supersedes pending review language in the preserved submission/history below. Private acceptance receipts: `coordinator-acceptance-pass4.json`, `separate-review-pass4.json` and `coordinator-evidence-pass4.json` under `.investigation-tools/workflow/queue-controls/`.
+
+## Historical 0.4.3 review submission
 
 After the pass-3 checkpoint, the human explicitly authorized **one additional repair and verification round without resetting counts**. This candidate addresses only QC-R1-001's remaining recognized-ad-source failure and affected queue/media regressions. It is author-checked and awaits the same separate reviewer's targeted **pass 4**, then coordinator acceptance. Cumulative history remains **3 completed review passes / 2 completed repair-verification rounds**; repair round 3 is submitted under the recorded maximum of **4 passes / 3 rounds**. An unresolved blocker at that limit requires another human checkpoint; no pass 5 is authorized.
 

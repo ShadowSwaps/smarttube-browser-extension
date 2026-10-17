@@ -2,7 +2,7 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.4.3 local review candidate.** Adds queue recovery and an on-demand player controls panel. Required non-author repair verification remains pending; a bounded signed-out live natural-end queue transition passed author checks; see [the candidate evidence and limits](docs/QUEUE_CONTROLS.md). The user's five normal-profile acceptance steps on 17 October 2026 apply to the earlier 0.3.0 version, including retained 1.5× after reload/navigation; they do not accept this candidate. See [that historical acceptance](docs/VALIDATION.md#user-reported-normal-profile-acceptance). Installation is manual; this is not a Chrome Web Store listing.
+**Status, 17 October 2026: v0.4.3 runtime/package accepted locally; readiness review pending.** Required separate non-author runtime review and coordinator acceptance passed. Adds queue recovery and an on-demand player controls panel; see [accepted evidence and preserved failures](docs/QUEUE_CONTROLS.md). Normal-Brave coverage now combines human-reported playback/popup/Next checks with explicitly delegated UI checks of automatic continuation and appearance. Failed-navigation and old-queue retention remain unrun in that profile; installed bytes were not independently measured. Non-author readiness/docs review is pending. See [exact outcomes, limits, checksum, update and rollback guidance](docs/RELEASE_0.4.3.md). No 0.4.3 GitHub release has been published by this work; installation is manual, with no store listing.
 
 ## Features
 
@@ -28,7 +28,7 @@ Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing
 
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 
-The subdued **ST** button is in the top-right corner of the player. Click it, or focus it and press Enter/Space, to open the controls and status/Undo area. Escape closes the focused panel and returns focus to ST; another Escape exits cinema. Only ST remains visible when collapsed; hidden tools leave the tab order. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. Click **Settings** in the popup to configure categories and automatic queue continuation.
+The subdued **ST** button is in the top-right corner of the player. Click it, or focus it and press Enter/Space, to open the controls and status/Undo area. Outside native fullscreen, Escape closes the focused panel and returns focus to ST before a further Escape exits cinema. In the observed normal-Brave fullscreen sequence, the first Escape exits fullscreen; the next closes ST and returns focus. Tab can leave the last tool for YouTube; focus is not trapped. Only ST remains visible when collapsed; hidden tools leave the tab order. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. The queue list and **Settings** are in Brave's extension popup, separate from the ST player panel.
 
 Queue selections remain saved until the selected video starts playing outside an advertisement. Failed or unavailable navigation retains the entries for retry from the popup. No automatic skipping of unavailable entries is added. A browser restart retains the queue but clears the temporary navigation receipt, so an interrupted selection may remain for manual retry/removal.
 
@@ -38,7 +38,7 @@ The saved speed is reconciled for up to four seconds at startup, with at most fo
 
 Click **Cinema** in the toolbar or **Cinema mode** in the popup to dim the page around the player. Press **Escape** or click the dimmed page to exit for that tab. Settings can also start videos in cinema mode; dimming suspends during fullscreen. Open **Picture and distractions** in settings or the popup for video filters and individual hide switches. **Reset video filters** disables filters and restores neutral values. Every appearance feature starts off; settings are saved on this device. Hiding uses known YouTube layout selectors and may need updates as the site changes.
 
-Updates are manual: replace your source folder with a newer version, select Reload on the extensions page, and refresh YouTube. Existing local settings are retained. Uninstalling the extension removes its local storage.
+Updates are manual: preserve a copy of the old files, replace files in the same unpacked root with a verified version, select Reload on the existing extension entry, and refresh YouTube. Keeping the same entry is intended to retain local settings and queue; verify them after reload. Uninstalling removes local storage; a different unpacked root/ID may use separate storage. See [exact 0.4.3 update and recovery steps](docs/RELEASE_0.4.3.md#manual-install-or-update).
 
 ## Develop locally
 

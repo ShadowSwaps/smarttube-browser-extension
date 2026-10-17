@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### 0.4.3 prepared release notes
+
+- Accepted the bounded runtime/package locally on 17 October 2026 after separate non-author pass 4 and coordinator verification. Selected normal-Brave checks now have human-reported and explicitly delegated UI evidence; failed-navigation and old-queue retention remain unrun in that profile. Readiness-documentation review remains pending; no release is published by this preparation.
+- Retained queue entries until the intended destination starts loaded, unpaused non-ad playback; failed navigation remains available for retry. Preserved origin membership, tab binding and one automatic attempt per ended playback.
+- Excluded recognized ad media after marker clearing, reloads and node replacement, including automatic queue continuation. Actual public-ad marker-clear behavior remains unrun; deterministic native-media fixtures and actual-code diagnostics cover the correction.
+- Replaced persistent player tools with a small ST entry and an on-demand keyboard-accessible panel; fixed popup lifetime and narrow-height overlap during the scoped review history.
+- Verified 20 units, 43 fixture outcomes and 15 fresh live Brave checks; retained 14 earlier live layout checks solely for unchanged dependencies. No new permissions, saved-queue schema, runtime dependencies or paid services.
+- Added [pinned install/update, SHA-256, human checklist, limits and rollback material](docs/RELEASE_0.4.3.md). Earlier failures/checkpoints remain historical; queue review ended at four passes/three repair rounds with no remaining allowance.
+- Recorded native fullscreen Escape precedence: first exits fullscreen, next closes ST and returns focus. Outside fullscreen, focused-panel close precedes cinema exit; Tab can leave the panel. The delegated UI route stopped on browser URL verification and remains stopped, with metadata-tab restoration unverified.
+
+### Dated clarification of historical entries
+
+On 17 October 2026, the human subsequently passed the five selected 0.3.0 normal-profile steps, including actual 1.5× after reload and link navigation. Earlier pending statements below describe their original checkpoints. They do not establish 0.4.3 normal-profile acceptance.
+
 ## 0.3.0
 
 - Added opt-in cinema dimming with Escape/outside-click exit, fullscreen suspension and a saved startup preference.
