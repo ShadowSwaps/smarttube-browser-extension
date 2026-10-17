@@ -12,6 +12,14 @@ Before a meaningful change, identify its intended result, preserved behavior, af
 
 Search before reading, select relevant evidence, batch independent reads, and filter large tool results to status, cursor, meaningful findings and requested evidence. Keep concise checkpoints with links instead of repeatedly loading full histories. Preserve historical failures and decisions. Progress reports should explain the current result and next gate without narrating unchanged polls.
 
+## Coordinator and policy routing
+
+The human-adopted coordinator/task procedure is in [docs/WORKFLOW.md](docs/WORKFLOW.md). Read it at task start and ownership/closure boundaries; use [docs/TASK_HANDOFF_TEMPLATE.md](docs/TASK_HANDOFF_TEMPLATE.md) for dispatch and return. The SmartTube Coordinator chooses bounded authorized scope. Substantial work uses a fresh task chat with selected sources; small repairs stay with its owner. Scoped task-chat coordination and recoverable completion-based archiving are authorized; this does not authorize agents, schedulers, unrelated messages, new features or publication. One writer remains in force.
+
+Read [docs/REVIEW_POLICY.md](docs/REVIEW_POLICY.md) before choosing a review path, reviewing or repairing findings. Preserve inherited mandatory gates. Allow one comprehensive review plus at most two repair-and-verification rounds per work item across chat, reviewer and commit changes. Unresolved blockers at the limit require a checkpoint; only explicit human authorization can extend this budget. The coordinator cannot grant more rounds, auto-pass blockers or reset cumulative counts.
+
+Keep task, finding and archive records under ignored `.investigation-tools/workflow/`. Keep pending review, scoped fixes and authorized release verification with the owning task. Archive only after the coordinator verifies completed scope, required publication, saved evidence and exact idle chat with no pending scoped action. Keep the coordinator open; do not permanently delete chats or clean up worktrees through this policy.
+
 ## Usage and completion
 
 At task start and substantial phase boundaries, read current account usage using the supported usage tool. Use the minimum remaining percentage across all usable windows, including weekly; missing values are unavailable, not zero. Do not poll while idle or claim a model setting changed when it did not.
@@ -26,7 +34,7 @@ Run focused meaningful checks while implementing, then relevant regression, inte
 
 Record source identity, command/scenario, outcome, relevant browser/environment, artifact identity and evidence location. Distinguish implementation, fixture verification, live-site verification and normal-profile acceptance. Do not equate a page reload with a browser-process restart or fixtures with actual community-service behavior. Keep previously accepted behavior covered when changing shared logic.
 
-Review the actual final diff and relevant evidence. Record reviewer identity and performed method; self-review must be labeled self-review. For consequential permission, storage, update or release-boundary changes, seek independent review when authorized and available, and report any missing required review. Do not claim independent acceptance from the author's own tests or from a reviewer label alone. Passing tests grant no new publication authority.
+Review the actual final diff and relevant evidence. Record reviewer identity, authorship and performed method; self-review must be labeled self-review. Contained changes require coordinator non-author review; consequential credentials, storage/recovery, permissions, updater/release trust or automated validation-selection changes require separate non-author review under the review policy. If required review is unavailable or unauthorized, keep acceptance pending. Do not claim independent acceptance from the author's own tests or from a reviewer label alone. Passing tests grant no new publication authority.
 
 ## Normal Brave profile
 
