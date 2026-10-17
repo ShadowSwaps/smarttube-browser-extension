@@ -10,7 +10,7 @@ function render() {
   for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
     const input = $(`#${key}`); if (input) input.checked = state.settings[key];
   }
-  $('#speed').value = String(state.settings.speed);
+  if ($('#speed')) $('#speed').value = String(state.settings.speed);
   for (const key of Object.keys(FILTER_LIMITS)) {
     if (!filterDrafts.has(key)) {
       $(`#${key}`).value = String(state.settings[key]);
@@ -24,11 +24,6 @@ function render() {
   $('#player-time').textContent = player?.videoId ? `${formatTime(player.position)} / ${formatTime(player.duration)} · ${player.speed}×` : 'Your viewing tools are ready when you are.';
   $('#sponsor-status').textContent = !state.settings.enabled ? 'Player enhancements are paused in settings.' : player?.status || '';
   for (const button of document.querySelectorAll('[data-control],#add-current')) button.disabled = !player?.videoId || !state.settings.enabled;
-  $('#play').textContent = player?.paused ? '▶ Play' : 'Ⅱ Pause';
-  $('#volume').value = String(Math.round((player?.volume ?? 1)*100));
-  $('#volume').disabled = !player?.videoId || !state.settings.enabled;
-  $('#volume-level').textContent = player?.muted ? 'Muted' : `${$('#volume').value}%`;
-  $('#mute').textContent = player?.muted ? 'Unmute' : 'Mute';
   $('#loop').setAttribute('aria-pressed',String(player?.loopEnabled ?? false));
   $('#loop').textContent = player?.loopEnabled ? 'Loop on' : 'Loop';
   $('#cinema').setAttribute('aria-pressed',String(player?.cinema ?? false));
@@ -119,19 +114,15 @@ async function init() {
   for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
     $(`#${key}`)?.addEventListener('change',event => save({[key]:event.target.checked}));
   }
-  $('#speed').addEventListener('change',event => save({speed:Number(event.target.value)}));
+  $('#speed')?.addEventListener('change',event => save({speed:Number(event.target.value)}));
   if (popup) {
     const [tab] = await chrome.tabs.query({active:true,currentWindow:true});
     // Sending only to the active tab avoids querying browsing history or all tabs.
     tabId = tab?.id;
     $('#settings').addEventListener('click',() => chrome.runtime.openOptionsPage());
-    $('#volume').addEventListener('input',event => control('volume',Number(event.target.value)/100));
     $('#open-youtube').addEventListener('click',() => chrome.tabs.create({url:'https://www.youtube.com/'}));
     for (const button of document.querySelectorAll('[data-control]')) button.addEventListener('click',() => {
-      if (button.dataset.control === 'back') control('seek',-10);
-      else if (button.dataset.control === 'forward') control('seek',10);
-      else if (button.dataset.control === 'toggle') control('toggle');
-      else control(button.dataset.control);
+      control(button.dataset.control);
     });
     $('#add-current').addEventListener('click',async () => {
       if (!player?.videoId) return;

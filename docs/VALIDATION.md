@@ -1,5 +1,9 @@
 # Validation status
 
+## 0.4.4 local preview
+
+The current [compact UI preview](PLAYER_UI.md) awaits non-author review. Its new silent isolated Brave fixture/live UI, playback, queue and coexistence evidence is recorded separately under the private `player-simplification` workflow item. Historical results below accept only their named sources; none substitutes for review or normal-profile acceptance of 0.4.4. Publication is deferred.
+
 ## 0.4.3 accepted runtime; readiness pending — 17 October 2026
 
 Separate non-author pass 4 and coordinator acceptance completed for commit `d5842686da40e1f171d8306fc28ad52845ca18cc`, tree `dd48b2f3138d91a6aa88b80815cc0ba41af8b4c2`. All original blocking findings are closed; cumulative queue history is four passes/three repair rounds/zero remaining. Accepted bounded evidence is 20 units, 43 fixtures and 15 fresh live Brave checks, with 14 historical live layout checks retained only for unchanged dependencies. Source/build/17-entry ZIP identities were verified; the 0.4.3 ZIP SHA-256 is `475dd3ac088279ffd58cf41255a5b742ca1850a77bec0b8e699547b730ffb580`.

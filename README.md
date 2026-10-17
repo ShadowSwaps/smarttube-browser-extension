@@ -2,12 +2,12 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status, 17 October 2026: v0.4.3 runtime/package accepted locally; readiness review pending.** Required separate non-author runtime review and coordinator acceptance passed. Adds queue recovery and an on-demand player controls panel; see [accepted evidence and preserved failures](docs/QUEUE_CONTROLS.md). Normal-Brave coverage now combines human-reported playback/popup/Next checks with explicitly delegated UI checks of automatic continuation and appearance. Failed-navigation and old-queue retention remain unrun in that profile; installed bytes were not independently measured. Non-author readiness/docs review is pending. See [exact outcomes, limits, checksum, update and rollback guidance](docs/RELEASE_0.4.3.md). No 0.4.3 GitHub release has been published by this work; installation is manual, with no store listing.
+**Status, 17 October 2026: v0.4.4 local preview; non-author review pending.** [Compact player tools](docs/PLAYER_UI.md) integrate one ST entry into YouTube's control bar with an accessible fallback and a queue-focused popup. The accepted [0.4.3 runtime/package and bounded normal-Brave evidence](docs/RELEASE_0.4.3.md) remain historical; they do not accept this changed preview. Publication and normal-profile installation are deferred.
 
 ## Features
 
-- Small player entry button opens play/pause, seeking, speed, loop, volume and queue controls.
-- Popup with playback controls and a queue saved on your device.
+- One player entry opens Queue/Cinema quick actions and expandable Loop/Picture tools.
+- Queue-focused popup with extension tools and Settings; ordinary playback stays with YouTube.
 - Opt-in SponsorBlock skipping, category selection, and an Undo skip control.
 - Default playback speed, optional toolbar, and optional automatic queue continuation.
 - Whole-video or A–B looping, native volume/mute controls, and optional mouse-wheel controls.
@@ -28,15 +28,15 @@ Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing
 
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 
-The subdued **ST** button is in the top-right corner of the player. Click it, or focus it and press Enter/Space, to open the controls and status/Undo area. Outside native fullscreen, Escape closes the focused panel and returns focus to ST before a further Escape exits cinema. In the observed normal-Brave fullscreen sequence, the first Escape exits fullscreen; the next closes ST and returns focus. Tab can leave the last tool for YouTube; focus is not trapped. Only ST remains visible when collapsed; hidden tools leave the tab order. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. The queue list and **Settings** are in Brave's extension popup, separate from the ST player panel.
+The **ST** button joins YouTube's native control bar, with a subdued top-right fallback when that bar is unavailable or narrow. Click/tap it, or focus it and press Enter/Space, to open tools and status/Undo. Outside native fullscreen, Escape closes focused tools and returns focus to ST before a further Escape exits Cinema. SmartTube leaves fullscreen Escape to the browser. Tab can leave the tools; focus is not trapped, and hidden tools leave the tab order. **Alt + Shift + S** temporarily pauses/resumes enhancements in that tab. The queue list and **Settings** are in Brave's extension popup. See [integration, fallback and input details](docs/PLAYER_UI.md).
 
 Queue selections remain saved until the selected video starts playing outside an advertisement. Failed or unavailable navigation retains the entries for retry from the popup. No automatic skipping of unavailable entries is added. A browser restart retains the queue but clears the temporary navigation receipt, so an interrupted selection may remain for manual retry/removal.
 
-For a range loop, choose **A** at the start and **B** at the end; **Clear** removes the range. Loop ranges reset when the video changes. Enable **Mouse-wheel playback controls** in settings for **Alt + wheel** speed changes and **Alt + Shift + wheel** volume changes over the player. The browser test processes are always muted; this does not mute ordinary extension use.
+Expand **Loop video / A–B**, choose **A** at the start and **B** at the end; **Clear** removes the range. Loop ranges reset when the video changes. Enable **Mouse-wheel playback controls** in settings for **Alt + wheel** speed changes and **Alt + Shift + wheel** volume changes over the player. The browser test processes are always muted; this does not mute ordinary extension use.
 
 The saved speed is reconciled for up to four seconds at startup, with at most four corrections. Deliberate speed actions take over immediately. If another extension should own the default, turn off **Apply saved playback speed**.
 
-Click **Cinema** in the toolbar or **Cinema mode** in the popup to dim the page around the player. Press **Escape** or click the dimmed page to exit for that tab. Settings can also start videos in cinema mode; dimming suspends during fullscreen. Open **Picture and distractions** in settings or the popup for video filters and individual hide switches. **Reset video filters** disables filters and restores neutral values. Every appearance feature starts off; settings are saved on this device. Hiding uses known YouTube layout selectors and may need updates as the site changes.
+Click **Cinema** in player tools or expand **Loop and Cinema** in the popup to dim the page around the player. Press **Escape** or click the dimmed page to exit for that tab. Settings can also start videos in cinema mode; dimming suspends during fullscreen. **Picture and distractions** in player tools makes labeled tab-only adjustments; Settings/popup save defaults locally. **Reset video filters** disables filtering and restores neutral values in the chosen surface. Every appearance feature starts off. Hiding uses known YouTube layout selectors and may need updates as the site changes.
 
 Updates are manual: preserve a copy of the old files, replace files in the same unpacked root with a verified version, select Reload on the existing extension entry, and refresh YouTube. Keeping the same entry is intended to retain local settings and queue; verify them after reload. Uninstalling removes local storage; a different unpacked root/ID may use separate storage. See [exact 0.4.3 update and recovery steps](docs/RELEASE_0.4.3.md#manual-install-or-update).
 

@@ -1,5 +1,7 @@
 # Appearance controls: 0.3.0
 
+Current source adds the [0.4.4 local UI preview](PLAYER_UI.md), awaiting non-author review: player Picture controls are tab-only, while popup/Settings retain saved defaults. The evidence below is historical and does not accept the preview.
+
 The locally accepted [0.4.3 runtime](QUEUE_CONTROLS.md) replaces the persistent toolbar with a small ST entry and an on-demand panel. Outside native fullscreen, Escape closes focused tools before exiting cinema. In the observed normal-Brave fullscreen sequence, first Escape exits fullscreen and the next closes ST with focus return. Runtime non-author review and coordinator acceptance completed on 17 October 2026. Later delegated normal-profile UI checks observed grayscale through video-link navigation, related-video hide/restore, cinema, native fullscreen and scrolling, followed by restoration of temporary appearance settings. [Exact methods, unrun limits, URL-verification stop and pending readiness review](RELEASE_0.4.3.md#normal-brave-results) are separate. The evidence below remains the historical 0.3.0 record, including its original checkpoint statements.
 
 The user selected cinema mode, video filters and hiding distractions as the next Enhancer-inspired increment. This is original MIT implementation of those selected ideas, using the [existing reference and feature map](ENHANCER_FEATURES.md). No reference JavaScript, themes or other assets were copied. Development and testing use existing local tools with no paid service, new npm dependency or added extension permission.

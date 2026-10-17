@@ -41,17 +41,24 @@ async function launchBrowser() {
 }
 async function state(settings,ids) {await worker.evaluate(({settings,ids})=>chrome.storage.local.set({settings,queue:ids.map(videoId=>({videoId,title:videoId}))}),{settings,ids});}
 const queue=()=>worker.evaluate(async()=>(await chrome.storage.local.get('queue')).queue.map(x=>x.videoId));
+async function sourceAutoplayOff() {
+ assert.equal(new URL(page.url()).searchParams.get('v'),A,'Only configure native autoplay on the source');
+ const box=await page.locator('#movie_player').boundingBox();
+ await page.mouse.move(1,1);await page.mouse.move(box.x+box.width-80,box.y+box.height-30,{steps:4});
+ const autoplay=page.locator('.ytp-autonav-toggle-button');
+ await autoplay.waitFor({state:'attached',timeout:10000});
+ const expand=page.locator('.ytp-expand-right-bottom-section-button');
+ if(!await autoplay.isVisible() && await expand.isVisible())await expand.click();
+ if(await autoplay.getAttribute('aria-checked')==='true')await autoplay.click();
+ await page.waitForFunction(()=>document.querySelector('.ytp-autonav-toggle-button')?.getAttribute('aria-checked')==='false',{},{timeout:5000});
+ assert.equal(await autoplay.getAttribute('aria-checked'),'false','Source native autoplay is off');
+}
 async function ready() {
  await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return v?.readyState>=2 && Number.isFinite(v.duration)&&v.duration>0&&!v.closest('.ad-showing,.ad-interrupting');},{},{timeout:35000});
- await page.waitForSelector('#smarttube-browser-toolbar');
+ await page.waitForSelector('#smarttube-player-entry',{state:'attached'});
  if(live && new URL(page.url()).searchParams.get('v')===A) {
   await page.locator('#movie_player video').evaluate(v=>v.pause());
-  await page.locator('#movie_player').hover();
-  const autoplay=page.locator('.ytp-autonav-toggle-button');
-  await autoplay.waitFor({state:'attached',timeout:10000});
-  if(await autoplay.getAttribute('aria-checked')==='true') await autoplay.click({timeout:5000});
-  await page.waitForFunction(()=>document.querySelector('.ytp-autonav-toggle-button')?.getAttribute('aria-checked')==='false',{},{timeout:5000});
-  assert.equal(await autoplay.getAttribute('aria-checked'),'false','Disable native site autoplay in this test-owned profile to isolate extension queue behavior');
+  await sourceAutoplayOff();
  }
 }
 async function shot(name){await page.screenshot({path:path.join(output,`${name}.png`)});}
@@ -59,6 +66,11 @@ async function ended() {
  // Live: let a short public source play through naturally. Fixtures seek near
  // the end of their local media, then wait for a trusted native ended event.
  if(live) {
+  assert.equal(new URL(page.url()).searchParams.get('v'),A,'Autoplay setup belongs only to the source experiment');
+  // YouTube can finish loading its native preference after initial ready().
+  // Establish the source-only condition immediately before the experiment,
+  // retaining the assertion and never modifying destination autoplay.
+  await sourceAutoplayOff();
   assert.equal(await page.locator('.ytp-autonav-toggle-button').getAttribute('aria-checked'),'false','Native autoplay must be off on the source before its natural-end experiment');
   const source=await page.locator('#movie_player video').evaluate(v=>({duration:v.duration,position:v.currentTime,seeking:v.seeking,src:v.currentSrc}));
   assert(source.duration>0 && source.duration<=45 && source.position<source.duration*.25 && !source.seeking,'Live completion must start early in demonstrably short content without seeking');
@@ -81,25 +93,25 @@ try {
  await ready();
  await page.locator('video').first().evaluate(v=>v.pause());
  const entry=()=>page.getByRole('button',{name:'SmartTube controls',exact:true});
- await check('Collapsed tools occupy only 30x28; hidden controls do not intercept hits or tab focus',async()=>{
+ await check('Collapsed tools expose one 36px entry; hidden controls do not intercept hits or tab focus',async()=>{
   assert.equal(await entry().getAttribute('aria-expanded'),'false');
   assert.equal(await page.getByRole('button',{name:'Forward ten seconds'}).isVisible(),false);
   const geometry=await page.locator('#smarttube-browser-toolbar').evaluate(h=>{const r=h.getBoundingClientRect(),s=h.shadowRoot;return {width:r.width,height:r.height,visible:[...s.querySelectorAll('button')].filter(b=>b.getClientRects().length).length,hiddenHit:s.querySelector('.bar').getClientRects().length};});
-  assert.deepEqual(geometry,{width:30,height:28,visible:1,hiddenHit:0});
+  assert.equal(geometry.height,0);assert.equal(geometry.visible,0);assert.equal(geometry.hiddenHit,0);assert.equal(await page.locator('#smarttube-player-entry').count(),1);
   await shot('collapsed');
  });
  await check('Keyboard Enter opens, Tab reaches tools, Escape closes and restores entry focus',async()=>{
-  const focusState=()=>page.locator('#smarttube-browser-toolbar').evaluate(h=>({documentFocus:document.activeElement?.tagName,focus:h.shadowRoot.activeElement?.outerHTML,expanded:h.shadowRoot.querySelector('[data-panel-toggle]').getAttribute('aria-expanded')}));
+  const focusState=()=>page.locator('#smarttube-browser-toolbar').evaluate(h=>({documentFocus:document.activeElement?.tagName,focus:h.shadowRoot.activeElement?.outerHTML,expanded:document.querySelector('#smarttube-player-entry').getAttribute('aria-expanded')}));
   await entry().focus();report.events.push({beforeEnter:await focusState()});await page.keyboard.press('Enter');report.events.push({afterEnter:await focusState()});
   assert.equal(await entry().getAttribute('aria-expanded'),'true');
   await page.keyboard.press('Tab');report.events.push({afterTab:await focusState()});
-  assert.equal(await page.locator('#smarttube-browser-toolbar').evaluate(h=>h.shadowRoot.activeElement?.dataset.action),'seek-back');
+  assert.equal(await page.locator('#smarttube-browser-toolbar').evaluate(h=>h.shadowRoot.activeElement?.dataset.action),'queue');
   await page.keyboard.press('Escape');
   assert.equal(await entry().getAttribute('aria-expanded'),'false');
-  assert.equal(await page.locator('#smarttube-browser-toolbar').evaluate(h=>h.shadowRoot.activeElement?.hasAttribute('data-panel-toggle')),true);
+  assert.equal(await page.locator('#smarttube-player-entry').evaluate(e=>document.activeElement===e),true);
  });
- await check('Pointer opens tools; focused panel stays open; volume and loop controls work',async()=>{
-  await entry().click();await page.getByRole('button',{name:'Raise volume ten percent'}).click();
+ await check('Pointer opens tools; focused panel stays open; grouped loop controls work',async()=>{
+  await entry().click();await page.getByText('Loop video / A–B',{exact:true}).click();
   await page.getByRole('button',{name:'Toggle video loop'}).click();assert.equal(await page.locator('video').first().evaluate(v=>v.loop),true);
   await page.waitForTimeout(1000);assert.equal(await entry().getAttribute('aria-expanded'),'true');
   await page.getByRole('button',{name:'Toggle video loop'}).click();await shot('expanded');
@@ -108,7 +120,7 @@ try {
   await check('Expanded controls fit narrow players and actual fullscreen; cinema and floating placement retain access',async()=>{
    await page.setViewportSize({width:360,height:600});await page.waitForTimeout(600);await shot('narrow');
    const bounds=await page.locator('#smarttube-browser-toolbar').evaluate(h=>{const a=h.getBoundingClientRect(),b=h.parentElement.getBoundingClientRect();return a.left>=b.left && a.right<=b.right && a.bottom<=b.bottom-55;});assert(bounds,'Narrow tools must leave the native bottom controls clear');
-   await page.getByRole('button',{name:'Fixture fullscreen'}).click();await page.waitForFunction(()=>Boolean(document.fullscreenElement));await shot('fullscreen');
+   await page.getByRole('button',{name:'Fixture fullscreen'}).click();await page.waitForFunction(()=>Boolean(document.fullscreenElement));await entry().click();await shot('fullscreen');
    await page.evaluate(()=>document.exitFullscreen());
    await page.getByRole('button',{name:'Toggle cinema mode'}).click();await page.waitForSelector('#smarttube-cinema-backdrop');
    await page.keyboard.press('Escape');assert.equal(await entry().getAttribute('aria-expanded'),'false');assert.equal(await page.locator('#smarttube-cinema-backdrop').count(),1);
@@ -127,7 +139,7 @@ try {
   await state({enabled:true,toolbar:true,autoQueue:true},[A,B,C]);
   await page.goto(`https://www.youtube.com/watch?v=${A}`);await ready();
   await check('Whole-video and A–B looping suppress queue continuation',async()=>{
-   await entry().click();await page.getByRole('button',{name:'Toggle video loop'}).click();await ended();await page.waitForTimeout(1000);assert.equal(new URL(page.url()).searchParams.get('v'),A);
+   await entry().click();await page.getByText('Loop video / A–B',{exact:true}).click();await page.getByRole('button',{name:'Toggle video loop'}).click();await ended();await page.waitForTimeout(1000);assert.equal(new URL(page.url()).searchParams.get('v'),A);
    await page.getByRole('button',{name:'Toggle video loop'}).click();await page.locator('video').evaluate(v=>{v.pause();v.currentTime=.2;});await page.getByRole('button',{name:'Set loop start'}).click();
    await page.locator('video').evaluate(v=>{v.currentTime=1;});await page.getByRole('button',{name:'Set loop end'}).click();await page.locator('video').evaluate(v=>v.play());await page.waitForTimeout(1600);
    assert.equal(new URL(page.url()).searchParams.get('v'),A);assert(await page.locator('video').evaluate(v=>v.currentTime<1.1));await page.getByRole('button',{name:'Clear loop range'}).click();

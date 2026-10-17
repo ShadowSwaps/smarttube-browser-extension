@@ -18,24 +18,19 @@ try {
   try {await page.goto('https://www.youtube.com/watch?v=aqz-KE-bpKQ',{waitUntil:'domcontentloaded',timeout:25000});}
   catch(error){navigationError=error.message.split('\n')[0];}
   const reject=page.getByRole('button',{name:/Reject/i}).first();
-  await reject.waitFor({state:'visible',timeout:12000}).then(() => reject.click()).catch(() => {});
-  await page.waitForSelector('#smarttube-browser-toolbar',{timeout:12000}).catch(() => {});
+  await reject.waitFor({state:'visible',timeout:12000}).then(async()=>{await reject.click();await reject.waitFor({state:'hidden'});}).catch(() => {});
+  await page.waitForSelector('#smarttube-player-entry',{state:'attached',timeout:12000}).catch(() => {});
   await page.locator('h1.ytd-watch-metadata').waitFor({state:'visible',timeout:12000}).catch(() => {});
   const controls=[]; let controlError=null;
   try {
   if (await page.locator('#smarttube-browser-toolbar').count()) {
+ await page.mouse.move(1,1);await page.locator('#movie_player').hover();
  await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
-    const before=await page.locator('video').first().evaluate(video => video.currentTime);
-    await page.locator('#smarttube-browser-toolbar').getByRole('button',{name:'Forward ten seconds'}).click({timeout:5000});
-    await page.waitForFunction(before => document.querySelector('video')?.currentTime >= before+9,before,{timeout:8000});
-    controls.push('Toolbar seek advances the live media clock by at least nine seconds.');
-    await page.locator('#smarttube-browser-toolbar').getByRole('button',{name:'Cycle playback speed'}).click();
-    if (await page.locator('video').first().evaluate(video => video.playbackRate) !== 1.25) throw new Error('Live speed control did not apply');
-    controls.push('Toolbar speed control changes native playback rate to 1.25×.');
-    const wasPaused=await page.locator('video').first().evaluate(video => video.paused);
-    await page.locator('#smarttube-browser-toolbar').getByRole('button',{name:'Play or pause'}).click();
-    await page.waitForFunction(wasPaused => document.querySelector('video')?.paused !== wasPaused,wasPaused,{timeout:8000});
-    controls.push('Toolbar toggles native YouTube playback state.');
+    await page.getByText('Loop video / A–B',{exact:true}).click();
+    await page.getByRole('button',{name:'Toggle video loop'}).click();
+    if(!await page.locator('video').first().evaluate(v=>v.loop))throw new Error('Whole-video loop did not apply');
+    await page.getByRole('button',{name:'Toggle video loop'}).click();
+    controls.push('Grouped extension loop toggles real native media without duplicate transport.');
   }
   } catch(error) {controlError=error.message.split('\n')[0];}
   const observed=await page.evaluate(() => {

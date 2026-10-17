@@ -30,7 +30,8 @@ try {
  const options=await context.newPage();
  await options.goto(`chrome-extension://${other.id}/html/options.html`);
  // DOM controls in the fresh profile, not source inspection or copied settings.
- await options.locator('#overridespeeds').check();
+ if(!await options.locator('#overridespeeds').isChecked())await options.locator('#overridespeeds').click();
+ await options.waitForFunction(()=>document.querySelector('#overridespeeds').checked);
  // Enhancer hides the standard select when its custom speed UI is active.
  // Assert the fresh-profile values without forcing a hidden widget action.
  assert.equal(await options.locator('#playback-speed').inputValue(),'1');
@@ -40,27 +41,29 @@ try {
  page=await context.newPage();
  await page.goto('https://www.youtube.com/watch?v=aqz-KE-bpKQ',{waitUntil:'domcontentloaded',timeout:30000});
  const reject=page.getByRole('button',{name:/Reject/i}).first();
- await reject.waitFor({state:'visible',timeout:5000}).then(()=>reject.click()).catch(()=>{});
- await page.waitForSelector('#smarttube-browser-toolbar',{timeout:15000});
+ await reject.waitFor({state:'visible',timeout:10000}).then(async()=>{await reject.click();await reject.waitFor({state:'hidden'});}).catch(()=>{});
+ await page.waitForSelector('#smarttube-player-entry',{state:'attached',timeout:15000});
  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
  await page.waitForTimeout(4500);
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),1.5);
  report.checks.push('Saved 1.5x holds on initial load with Enhancer override enabled at 1x.');
  await page.reload({waitUntil:'domcontentloaded'});
- await page.waitForSelector('#smarttube-browser-toolbar');
+ await page.waitForSelector('#smarttube-player-entry',{state:'attached'});
  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
  await page.waitForTimeout(4500);
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),1.5);
  report.checks.push('Saved 1.5x holds after reloading the real public video.');
  const tools=page.locator('#smarttube-browser-toolbar');
- const openTools=async()=>{const entry=tools.getByRole('button',{name:'SmartTube controls',exact:true});if(await entry.getAttribute('aria-expanded')==='false')await entry.click();};
+ const openTools=async()=>{await page.mouse.move(1,1);await page.locator('#movie_player').hover();await page.locator('#smarttube-player-entry').waitFor({state:'visible'});const entry=page.getByRole('button',{name:'SmartTube controls',exact:true});if(await entry.getAttribute('aria-expanded')==='false')await entry.click();};
  await openTools();
  await page.locator('video').first().evaluate(v=>{v.volume=.4;v.muted=false;});
- await tools.getByRole('button',{name:'Raise volume ten percent'}).click();
- assert(Math.abs(await page.locator('video').first().evaluate(v=>v.volume)-.5)<.001);
- await tools.getByRole('button',{name:'Mute or unmute'}).click();
+ await page.locator('#movie_player').focus();await page.keyboard.press('m');
  assert.equal(await page.locator('video').first().evaluate(v=>v.muted),true);
- report.checks.push('Volume and mute operate with both extensions enabled; browser output stays muted.');
+ await page.locator('#movie_player').focus();await page.keyboard.press('m');
+ report.checks.push('Native keyboard mute remains usable with both extensions; browser output stays muted.');
+ // Native unmute may restore YouTube's saved volume. Establish a bounded
+ // test volume before checking the extension's independent wheel delta.
+ await page.locator('video').first().evaluate(v=>{v.volume=.4;v.muted=false;});
  const box=await page.locator('video').first().boundingBox();assert(box);
  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
  await page.keyboard.down('Alt');
@@ -78,6 +81,7 @@ try {
  assert(Math.abs(afterVolume-beforeVolume-.05)<.001,`Alt-Shift-wheel changed volume by ${afterVolume-beforeVolume}`);
  report.checks.push('Real Alt-wheel and Alt-Shift-wheel apply one speed/volume step with Enhancer present.');
  await page.locator('video').first().evaluate(v=>{v.pause();v.currentTime=20;});
+ await openTools();await tools.getByText('Loop video / A–B',{exact:true}).click();
  await tools.getByRole('button',{name:'Set loop start'}).click();
  await page.locator('video').first().evaluate(v=>{v.currentTime=22;});
  await tools.getByRole('button',{name:'Set loop end'}).click();
@@ -85,11 +89,13 @@ try {
  await page.waitForFunction(()=>{const v=document.querySelector('video');return v.currentTime>=20&&v.currentTime<22;});
  await tools.getByRole('button',{name:'Clear loop range'}).click();
  report.checks.push('A-B loop repeats a real public video interval with Enhancer present.');
- await tools.getByRole('button',{name:'Cycle playback speed'}).click();
+ const beforeNativeRate=await page.locator('video').first().evaluate(v=>v.playbackRate);
+ await page.locator('#movie_player').focus();await page.keyboard.press('Shift+Period');
+ await page.waitForFunction(before=>document.querySelector('video').playbackRate!==before,beforeNativeRate);
  const chosen=await page.locator('video').first().evaluate(v=>v.playbackRate);
  await page.waitForTimeout(1000);
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),chosen);
- report.checks.push('Deliberate toolbar speed changes remain in effect.');
+ report.checks.push('Deliberate native keyboard speed changes remain in effect.');
  await page.locator('video').first().evaluate(v=>v.pause());
  const ownOptions=await context.newPage();
  await ownOptions.goto(`chrome-extension://${ours.id}/options.html`);
@@ -104,6 +110,7 @@ try {
  await page.waitForFunction(()=>{const f=document.querySelector('video').style.filter;return f.includes('brightness(110%)')&&f.includes('contrast(120%)')&&f.includes('saturate(0%)')&&f.includes('grayscale(30%)');});
  assert.equal(await page.locator('video').first().evaluate(v=>v.playbackRate),chosen);
  report.checks.push('All four picture settings apply to real media while retaining the deliberately chosen playback rate.');
+ await openTools();
  await tools.getByRole('button',{name:'Toggle cinema mode'}).click();
  await page.waitForSelector('#smarttube-cinema-backdrop');
  assert.equal(await page.locator('#movie_player').evaluate(player=>{const r=player.getBoundingClientRect();return player.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true);
@@ -130,7 +137,7 @@ try {
  }
  report.checks.push('Live comments and related-video containers hide and restore through the real settings UI. Other distraction selectors are fixture-verified only.');
  await page.reload({waitUntil:'domcontentloaded'});
- await page.waitForSelector('#smarttube-browser-toolbar');
+ await page.waitForSelector('#smarttube-player-entry',{state:'attached'});
  await page.waitForFunction(()=>document.querySelector('video')?.style.filter.includes('brightness(110%)'));
  await ownOptions.reload();
  assert.equal(await ownOptions.getByLabel('Contrast',{exact:true}).inputValue(),'120');
@@ -142,6 +149,7 @@ try {
  report.result='passed';
 } catch(error) {
  report.result='failed';report.error=error.message;
+ report.uiDiagnostic=await page?.evaluate(()=>{const p=document.querySelector('#movie_player'),e=document.querySelector('#smarttube-player-entry'),c=p?.querySelector('.ytp-chrome-bottom'),r=p?.getBoundingClientRect();return {playerClass:p?.className,entry:e?.outerHTML,chrome:c?{style:c.getAttribute('style'),display:getComputedStyle(c).display,visibility:getComputedStyle(c).visibility,opacity:getComputedStyle(c).opacity}:null,hover:r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,700):null,playerRect:r?{x:r.x,y:r.y,w:r.width,h:r.height}:null};}).catch(()=>null);
  await page?.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});
  throw error;
 } finally {

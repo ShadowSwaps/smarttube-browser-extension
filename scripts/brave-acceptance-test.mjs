@@ -61,9 +61,9 @@ try {
  if(consentVisible) {await reject.click();await reject.waitFor({state:'hidden'});}
  report.consent=consentVisible?'Rejected optional cookies in fresh test profile':'No consent control observed within 10 seconds';
  const video=()=>page.locator('#movie_player video').first();
- async function ready() {
-  await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return v?.readyState>=2&&Number.isFinite(v.duration)&&v.duration>0&&!v.closest('.ad-showing,.ad-interrupting');},{},{timeout:30000});
-  await page.waitForSelector('#smarttube-browser-toolbar');
+ async function ready(timeout=30000) {
+  await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return v?.readyState>=2&&Number.isFinite(v.duration)&&v.duration>0&&!v.closest('.ad-showing,.ad-interrupting');},{},{timeout});
+  await page.waitForSelector('#smarttube-player-entry',{state:'attached'});
   await page.waitForFunction(()=>document.querySelector('#movie_player video')?.style.filter.includes('brightness(110%)'));
  }
  await ready();await page.waitForTimeout(4500);
@@ -89,18 +89,17 @@ try {
  stage='native fullscreen';
  await geometry('Cinema matches the initial live player boundaries and preserves center hit testing.');
  await page.locator('#movie_player').hover();
- await page.locator('.ytp-fullscreen-button').click();
+ await page.locator('#movie_player').focus();await page.keyboard.press('f');
  await page.waitForFunction(()=>{const f=document.fullscreenElement,p=document.querySelector('#movie_player');return Boolean(f && (f.contains(p)||p.contains(f)));});
  await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
  assert.equal(await video().evaluate(v=>v.style.filter.includes('brightness(110%)')),true);
  const fullscreenPosition=await video().evaluate(v=>v.currentTime);
- if(await page.getByRole('button',{name:'SmartTube controls',exact:true}).getAttribute('aria-expanded')==='false') await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
- await page.getByRole('button',{name:'Forward ten seconds'}).click();
+ await page.locator('#movie_player').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');
  await page.waitForFunction(before=>document.querySelector('#movie_player video').currentTime>=before+9,fullscreenPosition);
- report.checks.push('SmartTube toolbar seeking remains clickable during actual native fullscreen.');
+ report.checks.push('Native keyboard seeking remains usable during actual native fullscreen.');
  await page.screenshot({path:path.join(output,'native-fullscreen.png')});
  // Use the site's own native fullscreen control for exit as well.
- await page.locator('#movie_player').hover();await page.locator('.ytp-fullscreen-button').click();
+ await page.locator('#movie_player').hover();await page.locator('#movie_player').focus();await page.keyboard.press('f');
  await page.waitForFunction(()=>!document.fullscreenElement);
  await geometry('Actual YouTube native fullscreen entry suspends cinema, exit resumes it, and filters remain applied.');
  stage='resize and scroll';
@@ -160,6 +159,7 @@ try {
  report.checks.push('Live comments/related visibility restores after actual SPA media navigation.');
  stage='leave watch and return';
  await page.evaluate(()=>scrollTo(0,0));
+ await page.mouse.move(1,1);await page.locator('#movie_player').hover();await page.locator('#smarttube-player-entry').waitFor({state:'visible'});
  if(await page.getByRole('button',{name:'SmartTube controls',exact:true}).getAttribute('aria-expanded')==='false') await page.getByRole('button',{name:'SmartTube controls',exact:true}).click();
  await page.getByRole('button',{name:'Toggle cinema mode'}).click();
  await geometry('Cinema follows the incoming live media after SPA navigation and layout switches.');
@@ -170,7 +170,23 @@ try {
  assert.equal(await page.evaluate(()=>window.__acceptanceDocument),documentId);
  await page.locator('#smarttube-cinema-backdrop').waitFor({state:'detached'});
  await page.waitForFunction(()=>window.__acceptanceLeavingVideo.style.filter==='');
- await page.goBack({waitUntil:'domcontentloaded'});await ready();
+ await page.goBack({waitUntil:'domcontentloaded'});
+ stage='return media after real SPA';
+ await page.waitForSelector('#movie_player video');
+ if(await video().evaluate(v=>v.paused)){await page.locator('#movie_player').focus();await page.keyboard.press('k');}
+ // A previous run returned into a 175s public ad with YouTube's real Skip
+ // button visible. Use that standard control in this test-owned profile,
+ // with at most two ad transitions; never seek or alter protection settings.
+ for(let i=0;i<2;i++) {
+  const outcome=await Promise.race([
+   page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return v?.readyState>=2&&!v.closest('.ad-showing,.ad-interrupting');},{},{timeout:60000}).then(()=>'content'),
+   page.getByRole('button',{name:/^Skip(?: ads?)?$/i}).first().waitFor({state:'visible',timeout:60000}).then(()=>'skip')
+  ]);
+  if(outcome==='content')break;
+  await page.getByRole('button',{name:/^Skip(?: ads?)?$/i}).first().click();
+  report.events.push({name:'Used native YouTube Skip on return to watch',transition:i+1});
+ }
+ await ready(120000);
  assert.equal(await page.evaluate(()=>window.__acceptanceDocument),documentId);
  await options.getByLabel('Start videos in cinema mode',{exact:false}).uncheck();
  await options.getByLabel('Start videos in cinema mode',{exact:false}).check();
@@ -179,7 +195,7 @@ try {
  report.result='passed';
 } catch(error) {
  report.result='failed';report.stage=stage;report.error=error.message;
- report.diagnostics=await page?.evaluate(()=>{const p=document.querySelector('#movie_player'),r=p?.getBoundingClientRect(),v=p?.querySelector('video');return {time:performance.now(),media:v?{duration:v.duration,rate:v.playbackRate,readyState:v.readyState}:null,status:document.querySelector('#smarttube-browser-toolbar')?.shadowRoot?.querySelector('[data-status]')?.textContent,fullscreen:{active:Boolean(document.fullscreenElement),tag:document.fullscreenElement?.tagName||null,id:document.fullscreenElement?.id||null},player:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null,panels:[...document.querySelectorAll('[data-cinema-panel]')].map(el=>({style:el.getAttribute('style')})),centerHit:r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.tagName:null};}).catch(()=>null);
+ report.diagnostics=await page?.evaluate(()=>{const p=document.querySelector('#movie_player'),r=p?.getBoundingClientRect(),v=p?.querySelector('video');return {time:performance.now(),media:v?{duration:v.duration,rate:v.playbackRate,readyState:v.readyState,paused:v.paused,advertising:Boolean(v.closest('.ad-showing,.ad-interrupting'))}:null,status:document.querySelector('#smarttube-browser-toolbar')?.shadowRoot?.querySelector('[data-status]')?.textContent,fullscreen:{active:Boolean(document.fullscreenElement),tag:document.fullscreenElement?.tagName||null,id:document.fullscreenElement?.id||null},player:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null,panels:[...document.querySelectorAll('[data-cinema-panel]')].map(el=>({style:el.getAttribute('style')})),centerHit:r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.tagName:null};}).catch(()=>null);
  await page?.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});
  throw error;
 } finally {

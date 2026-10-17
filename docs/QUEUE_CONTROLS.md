@@ -1,5 +1,7 @@
 # Queue recovery and discreet controls: 0.4.3
 
+The current [0.4.4 compact UI preview](PLAYER_UI.md) changes player/popup presentation and awaits its own non-author review. Queue tracker/background/storage semantics and the accepted 0.4.3 package/counts below remain frozen. Historical acceptance does not accept the new UI.
+
 ## Accepted runtime — 17 October 2026
 
 Separate non-author pass 4 and coordinator acceptance completed on `d5842686da40e1f171d8306fc28ad52845ca18cc` (tree `dd48b2f3138d91a6aa88b80815cc0ba41af8b4c2`). QC-R1-001 is closed verified; QC-R1-002/003 remain closed; the changed runtime's live natural-end gate was revalidated. The reviewer inspected the diff/dependencies/evidence, ran 20 units and syntax/permission checks, and verified actual-code multi-ad/empty/node/target diagnostics. The coordinator independently inspected 103 source/report/artifact checks and destination imagery. Cumulative history is **four reviews / three repair rounds / zero remaining**. This readiness work grants no further runtime repairs.

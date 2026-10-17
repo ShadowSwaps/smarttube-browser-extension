@@ -15,7 +15,12 @@
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;
   let lastSkip = null, undoUntil = 0, sessionDisabled = false;
-  let cinemaOverride = null, panelOpen = false;
+  let cinemaOverride = null, panelOpen = false, entry = null;
+  let pictureOverrides = {};
+  let observedPlayer = null;
+  let lastPlayerPointer = 0;
+  const playerSize = new ResizeObserver(() => {if(video)mount();});
+  const playerVisibility = new MutationObserver(() => {if(observedPlayer && entry)layoutEntry(observedPlayer);});
   const cinemaEnabled = () => settings.enabled && Boolean(videoId) && (cinemaOverride ?? settings.cinema);
   const appearance = createAppearance({onExitCinema:() => {cinemaOverride = false; sync();},toolsHaveEscape:() => panelOpen && Boolean(shadow?.activeElement)});
   const send = message => chrome.runtime.sendMessage(message).catch(() => ({ok:false}));
@@ -27,18 +32,24 @@
     if (!shadow) return;
     host.hidden = !settings.enabled || !settings.toolbar || !videoId;
     shadow.querySelector('[data-status]').textContent = status;
-    const entry = shadow.querySelector('[data-panel-toggle]');
+    entry.hidden = host.hidden;
     entry.title = `SmartTube · ${status}${lastSkip ? ' · Undo skip available' : ''}`;
     entry.textContent = lastSkip ? 'ST·' : 'ST';
-    shadow.querySelector('[data-speed]').textContent = `${video?.playbackRate || settings.speed}×`;
-    shadow.querySelector('[data-action="mute"]').textContent = video?.muted ? 'Unmute' : `${Math.round((video?.volume ?? 1)*100)}%`;
+    for (const input of shadow.querySelectorAll('[data-setting]')) {
+      if (shadow.activeElement === input) continue;
+      const value = pictureOverrides[input.dataset.setting] ?? settings[input.dataset.setting];
+      if (input.type === 'checkbox') input.checked = value;
+      else input.value = value;
+    }
     shadow.querySelector('[data-action="loop"]').setAttribute('aria-pressed',String(loopEnabled));
     shadow.querySelector('[data-action="loop"]').textContent = loopEnabled ? 'Loop on' : 'Loop';
     shadow.querySelector('[data-action="loop-a"]').textContent = loopStart === null ? 'A' : `A ${Math.floor(loopStart)}s`;
     shadow.querySelector('[data-action="loop-b"]').textContent = loopEnd === null ? 'B' : `B ${Math.floor(loopEnd)}s`;
+    for (const name of ['loop','loop-a','loop-b']) shadow.querySelector(`[data-action="${name}"]`).disabled = !playable() || !Number.isFinite(video.duration) || isAd() || Boolean(video.closest('.ytp-live'));
     shadow.querySelector('[data-action="cinema"]').setAttribute('aria-pressed',String(cinemaEnabled()));
     const undo = shadow.querySelector('[data-action="undo"]');
     undo.hidden = !lastSkip;
+    if (host.hidden && panelOpen) setPanel(false,false);
   }
   function notice(text) { status = text; paint(); }
   async function loadSegments() {
@@ -158,47 +169,99 @@
   }
   function mount() {
     const player = video?.closest('#movie_player, #shorts-player, .html5-video-player');
-    if (!player) return;
+    if (!player) { if (host) host.hidden = true; if (entry) entry.hidden = true; return; }
     if (!host) {
       host = document.createElement('div'); host.id = 'smarttube-browser-toolbar';
+      host.setAttribute('role','region'); host.setAttribute('aria-label','SmartTube tools');
       shadow = host.attachShadow({mode:'open'});
       shadow.innerHTML = `<style>
-        :host{position:absolute;right:8px;top:8px;z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;max-width:calc(100% - 16px)}
-        :host([hidden]),[hidden]{display:none!important} .entry{display:block;margin-left:auto;width:30px;height:28px;padding:0;background:#151921aa;opacity:.55}
-        .entry:hover,.entry:focus-visible,.entry[aria-expanded="true"]{opacity:1} .bar{box-sizing:border-box;display:flex;flex-wrap:wrap;gap:5px;align-items:center;width:340px;max-width:100%;max-height:var(--panel-height,240px);overflow:auto;margin-top:5px;padding:8px;background:#151921f5;border:1px solid #485364;border-radius:8px;box-shadow:0 4px 18px #0005}
-        button{border:0;border-radius:5px;color:inherit;background:#28313e;min-height:28px;padding:5px 7px;cursor:pointer;font:inherit} button:hover{background:#3d4a5c} button:focus-visible{outline:2px solid #7be0c7;outline-offset:2px} .status{flex-basis:100%;overflow-wrap:anywhere;color:#cdd4df}
-        </style><button class="entry" data-panel-toggle aria-label="SmartTube controls" aria-expanded="false" aria-controls="smarttube-tools">ST</button><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube playback tools" hidden><button data-action="seek-back" aria-label="Rewind ten seconds">−10s</button><button data-action="toggle" aria-label="Play or pause">▶ / Ⅱ</button><button data-action="seek-forward" aria-label="Forward ten seconds">+10s</button><button data-action="speed" data-speed aria-label="Cycle playback speed">1×</button><button data-action="volume-down" aria-label="Lower volume ten percent">Vol−</button><button data-action="mute" aria-label="Mute or unmute">100%</button><button data-action="volume-up" aria-label="Raise volume ten percent">Vol+</button><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="undo" hidden>Undo skip</button><span class="status" role="status" data-status></span></div>`;
+        :host{position:absolute;right:12px;bottom:var(--tools-bottom,72px);z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;width:300px;max-width:calc(100% - 24px)}
+        :host([hidden]),[hidden]{display:none!important}.bar{box-sizing:border-box;max-height:var(--panel-height,240px);overflow:auto;padding:12px;background:#181818f5;border:1px solid #555;border-radius:10px;box-shadow:0 4px 18px #0005}
+        .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0} .heading{display:flex;justify-content:space-between;align-items:center}:host([data-fallback]) .heading{padding-right:40px}details{border-top:1px solid #444;margin-top:10px;padding-top:10px}summary{cursor:pointer;padding:4px 0}label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}input[type=range]{width:120px;max-width:50%;accent-color:#ddd}
+        button{border:0;border-radius:5px;color:inherit;background:#333;min-height:32px;padding:5px 9px;cursor:pointer;font:inherit}button:hover{background:#484848}button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #7be0c7;outline-offset:2px}button[aria-pressed=true]{background:#426052}.status{display:block;margin-top:10px;overflow-wrap:anywhere;color:#ccc}
+        </style><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube player tools" hidden><div class="heading"><strong>SmartTube</strong><button data-close aria-label="Close SmartTube tools">×</button></div><div class="row"><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button></div><button data-action="undo" hidden>Undo skip</button><details><summary>Loop video / A–B</summary><div class="row"><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button></div></details><details data-picture><summary>Picture and distractions</summary></details><span class="status" role="status" data-status></span></div>`;
+      const picture = shadow.querySelector('[data-picture]');
+      picture.insertAdjacentHTML('beforeend','<p>For this tab. Save defaults in extension Settings.</p>');
+      const toggles = {filtersEnabled:'Enable video filters',hideComments:'Hide comments',hideRelated:'Hide related videos',hideChat:'Hide live chat',hideShorts:'Hide Shorts shelves',hideEndCards:'Hide end screens',hideInfoCards:'Hide info cards'};
+      for (const [key,label] of Object.entries(toggles)) picture.insertAdjacentHTML('beforeend',`<label>${label}<input type="checkbox" data-setting="${key}"></label>`);
+      for (const [key,label,min,max] of [['filterBrightness','Brightness',50,150],['filterContrast','Contrast',50,150],['filterSaturation','Saturation',0,200],['filterGrayscale','Grayscale',0,100]]) picture.insertAdjacentHTML('beforeend',`<label>${label}<input aria-label="${label}" type="range" min="${min}" max="${max}" data-setting="${key}"></label>`);
+      picture.insertAdjacentHTML('beforeend','<button data-reset-picture>Reset video filters</button>');
+      // Saved preferences remain owned by extension pages. Player tools apply
+      // tab-only presentation overrides without changing storage or routing.
+      const savePicture = patch => {pictureOverrides={...pictureOverrides,...patch};sync();notice('Picture changed for this tab');};
+      shadow.addEventListener('change',event => {const input=event.target;if(input.dataset.setting) savePicture({[input.dataset.setting]:input.type === 'checkbox' ? input.checked : Number(input.value)});});
+      entry = document.createElement('button'); entry.id='smarttube-player-entry'; entry.type='button';
+      entry.setAttribute('aria-label','SmartTube controls'); entry.setAttribute('aria-expanded','false'); entry.setAttribute('aria-controls',host.id);
+      entry.addEventListener('click',event => {event.stopPropagation();setPanel(!panelOpen);});
+      const entryStyle=document.createElement('style');entryStyle.id='smarttube-entry-style';
+      entryStyle.textContent='#smarttube-player-entry{box-sizing:border-box;flex:0 0 36px;width:36px;height:36px;align-self:center;border:0;border-radius:6px;padding:0;margin:0 2px;background:#242424bb;color:white;font:600 12px system-ui;cursor:pointer}#smarttube-player-entry[data-fallback]{position:absolute;right:12px;top:12px;z-index:61;opacity:.7}#smarttube-player-entry:hover,#smarttube-player-entry:focus-visible{opacity:1;background:#444}#smarttube-player-entry:focus-visible{outline:2px solid #7be0c7;outline-offset:-2px}#smarttube-player-entry[hidden]{display:none!important}';
+      document.documentElement.append(entryStyle);
+      const onKey = event => {
+        if (event.key === 'Escape' && document.fullscreenElement) return;
+        if (event.key === 'Escape' && panelOpen) {event.preventDefault();setPanel(false);}
+        event.stopPropagation();
+      };
+      entry.addEventListener('keydown',onKey);entry.addEventListener('keyup',event=>event.stopPropagation());
       shadow.addEventListener('click', event => {
         event.stopPropagation();
         const button = event.target.closest('button');
         if (!button) return;
-        if (button.hasAttribute('data-panel-toggle')) { setPanel(!panelOpen); return; }
-        const name = button.dataset.action;
-        if (name === 'seek-back' || name === 'seek-forward') action('seek', name === 'seek-back' ? -10 : 10);
-        else if (name === 'speed') {
-          const speeds = [1,1.25,1.5,1.75,2];
-          const speed = speeds.find(rate => rate > video.playbackRate + .01) || 1;
-          action('speed',speed);
-        } else action(name);
+        if (button.hasAttribute('data-close')) { setPanel(false); return; }
+        if (button.hasAttribute('data-reset-picture')) {savePicture({filtersEnabled:false,filterBrightness:100,filterContrast:100,filterSaturation:100,filterGrayscale:0});return;}
+        if (button.dataset.action) {const result=action(button.dataset.action);if(!result.ok)notice(result.error);}
         paint();
       });
-      shadow.addEventListener('keydown',event => {
-        if (event.key === 'Escape' && panelOpen) { event.preventDefault(); setPanel(false); }
-        event.stopPropagation();
-      });
+      shadow.addEventListener('keydown',onKey);
       shadow.addEventListener('keyup',event => event.stopPropagation());
-      for (const type of ['pointerdown','pointerup','mousedown','mouseup','dblclick','touchstart','touchend']) shadow.addEventListener(type,event => event.stopPropagation());
+      for (const type of ['pointerdown','pointerup','mousedown','mouseup','dblclick','touchstart','touchend']) {shadow.addEventListener(type,event => event.stopPropagation());entry.addEventListener(type,event => event.stopPropagation());}
+      document.addEventListener('pointerdown',event=>{if(panelOpen && !event.composedPath().includes(host) && !event.composedPath().includes(entry))setPanel(false,false);},true);
+      document.addEventListener('focusin',event=>{if(panelOpen && !event.composedPath().includes(host) && !event.composedPath().includes(entry))setPanel(false,false);});
+      document.addEventListener('pointermove',event=>{
+        if (!observedPlayer?.contains(event.target)) return;
+        lastPlayerPointer=Date.now();layoutEntry(observedPlayer);
+      },{passive:true});
     }
     if (host.parentElement !== player) player.append(host);
-    host.style.setProperty('--panel-height',`${Math.max(28,player.clientHeight-100)}px`);
+    if (observedPlayer !== player) {
+      playerSize.disconnect();playerVisibility.disconnect();observedPlayer=player;
+      playerSize.observe(player);playerVisibility.observe(player,{attributes:true,attributeFilter:['class']});
+    }
+    layoutEntry(player);
+    // Reserve the native control/caption area; tools scroll within the rest.
+    const caption=player.querySelector('.ytp-caption-window-container');
+    const visibleCaption=[...(caption?.querySelectorAll('.caption-window') || [])].find(node=>node.getClientRects().length && getComputedStyle(node).visibility!=='hidden');
+    const captionTop=visibleCaption?.getBoundingClientRect().top;
+    const rect=player.getBoundingClientRect();
+    const bottom=Math.max(76,Number.isFinite(captionTop) ? rect.bottom-captionTop+8 : 0);
+    host.style.setProperty('--tools-bottom',`${bottom}px`);
+    host.style.setProperty('--panel-height',`${Math.max(32,player.clientHeight-bottom-12)}px`);
     paint();
   }
-  function setPanel(open) {
+  function layoutEntry(player,forceFallback=false) {
+    const controls=player.querySelector('.ytp-right-controls');
+    const native=controls && player.clientWidth>=640 && controls.getBoundingClientRect().width>0;
+    const focused=document.activeElement===entry;
+    const chrome=controls?.closest('.ytp-chrome-bottom');
+    const chromeHidden=player.classList.contains('ytp-autohide') || (chrome && (getComputedStyle(chrome).visibility==='hidden' || Number(getComputedStyle(chrome).opacity)===0));
+    // Some coexisting controllers leave native chrome hidden even during
+    // pointer activity. Keep one reachable entry without forcing chrome on.
+    const needsAccess=focused || Date.now()-lastPlayerPointer<1500 || (entry.hasAttribute('data-fallback') && entry.matches(':hover'));
+    const target=native && !forceFallback && !(needsAccess && chromeHidden) ? controls : player;
+    if(entry.parentElement!==target){target.append(entry);if(focused)entry.focus({preventScroll:true});}
+    entry.toggleAttribute('data-fallback',target===player);
+    host.toggleAttribute('data-fallback',target===player);
+    const hidden=target===controls && chromeHidden;
+    entry.tabIndex=hidden ? -1 : 0;
+    entry.style.visibility=hidden ? 'hidden' : '';
+    entry.style.pointerEvents=hidden ? 'none' : '';
+  }
+  function setPanel(open,returnFocus=true) {
+    if(open) mount();
     panelOpen = open;
     shadow.querySelector('.bar').hidden = !open;
-    const entry = shadow.querySelector('[data-panel-toggle]');
     entry.setAttribute('aria-expanded',String(open));
-    if (!open) entry.focus();
+    if(open) shadow.querySelector('[data-close]').focus({preventScroll:true});
+    else if(returnFocus && !entry.hidden) {layoutEntry(host.parentElement,entry.tabIndex<0);entry.focus({preventScroll:true});}
   }
   function onEnded() { if (video?.ended && settings.autoQueue && !loopEnabled && !isAd() && queueMedia.matches(videoId,video)) next(true); }
   function onQueueLoad() { queueMedia.loading(isAd() ? null : videoIdFromUrl(location.href),video); queueConfirmed = ''; }
@@ -231,8 +294,8 @@
       if (key !== speedKey) { speedKey = key; resetSpeed(); }
       mount(); applySpeed(); tick(); confirmQueue();
       if (!nextPending && !video.paused && !video.ended && video.currentTime < video.duration-1) attemptedEnd = null;
-    } else if (host) host.hidden = true;
-    appearance.update({video:videoId ? video : null,settings,cinemaEnabled:cinemaEnabled()});
+    } else if (host) {setPanel(false,false);host.hidden = true;entry.hidden = true;playerSize.disconnect();playerVisibility.disconnect();observedPlayer=null;}
+    appearance.update({video:videoId ? video : null,settings:{...settings,...pictureOverrides},cinemaEnabled:cinemaEnabled()});
   }
   chrome.runtime.onMessage.addListener((message,sender,respond) => {
     if (sender.id !== chrome.runtime.id) return;
@@ -243,6 +306,7 @@
     if (area !== 'local' || !changes.settings) return;
     const old = settings;
     settings = sanitizeSettings(changes.settings.newValue);
+    for (const key of Object.keys(pictureOverrides)) if (settings[key] !== old[key]) delete pictureOverrides[key];
     savedEnabled = settings.enabled;
     if (sessionDisabled) settings.enabled = false;
     if (!settings.enabled) clearLoop();

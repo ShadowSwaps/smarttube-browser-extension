@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 0.4.4 local preview — review pending
+
+- Integrated one SmartTube entry into native player chrome, with one accessible fallback and a compact independent popover. Added grouped Loop/Picture tools, Queue/Cinema quick actions and contextual Undo.
+- Removed duplicate ordinary playback buttons from player tools and popup; retained saved-speed/wheel behavior and extension functions. Popup now prioritizes the queue and Settings.
+- Kept saved preferences in extension pages; player picture controls are explicitly tab-only. No queue/background/storage/permission changes. Existing 0.4.3 package preserved; publication and normal-profile installation deferred.
+- See [behavior, validation route and limits](docs/PLAYER_UI.md). Author checks do not establish non-author acceptance.
+
 ### 0.4.3 prepared release notes
 
 - Accepted the bounded runtime/package locally on 17 October 2026 after separate non-author pass 4 and coordinator verification. Selected normal-Brave checks now have human-reported and explicitly delegated UI evidence; failed-navigation and old-queue retention remain unrun in that profile. Readiness-documentation review remains pending; no release is published by this preparation.
