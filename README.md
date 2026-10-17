@@ -2,7 +2,7 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.3.0 developer preview.** Adds cinema mode, video filters and reversible distraction controls, alongside the startup speed fix and playback tools. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19; normal-profile acceptance of this update is pending. See [appearance evidence](docs/APPEARANCE_FEATURES.md) and the [playback feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
+**Status: v0.3.0 developer preview.** Adds cinema mode, video filters and reversible distraction controls, alongside the startup speed fix and playback tools. Tested in Brave fixtures and a live isolated profile with Enhancer 3.0.19. On 17 October 2026, the user reported all five normal-profile acceptance steps passed, including 1.5× after reload and video-link navigation. See [current acceptance and limits](docs/VALIDATION.md#user-reported-normal-profile-acceptance), [appearance evidence](docs/APPEARANCE_FEATURES.md) and the [playback feature map](docs/ENHANCER_FEATURES.md). Installation is manual; this is not a Chrome Web Store listing.
 
 ## Features
 

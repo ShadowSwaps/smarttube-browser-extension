@@ -6,13 +6,19 @@ Ten local tests, permission/syntax checks, build, 28 Brave fixture outcomes and 
 
 Additional isolated Brave testing on the unchanged v0.3.0 package passed 14 live gap checks: actual native fullscreen entry/exit and toolbar seeking, three viewport sizes, partial/deep scrolling with Enhancer's floating player, real same-document video navigation, appearance cleanup/return, and comments/related restoration. The incoming content was confirmed ready and outside advertising state before asserting saved speed. See [the additional evidence, preserved harness failures and exact identities](APPEARANCE_FEATURES.md#additional-isolated-brave-gap-checks). Extension code and package are unchanged; relevant earlier results are retained rather than unnecessarily rerun.
 
-0.3.0 normal-profile acceptance and non-author review of this test/evidence increment remain pending. Live comments/related containers were exercised; other hide selectors and detached-video replacement remain fixture coverage. Native fullscreen now has bounded live API evidence; exhaustive layouts and other browsers remain unverified. Historical results below retain their original scope.
+The five-step 0.3.0 normal-profile checklist is now user-reported passed, as recorded below. Non-author coordinator pass 1 supported the bounded technical evidence and user-reported results and requested correction of stale acceptance text. Documentation acceptance follows the separate review workflow. Live comments/related containers were exercised; other hide selectors and detached-video replacement remain fixture coverage. Native fullscreen now has bounded live API evidence; exhaustive layouts and other browsers remain unverified. Historical results below retain their original scope.
+
+### User-reported normal-profile acceptance
+
+On 17 October 2026, the human reported all five requested checklist steps passed in their normal Brave profile: source/version/reload and toolbar/popup connection; saved default speed; playback controls, popup routing and persistence; cinema, scrolling/resizing and native fullscreen; and video filters, navigation, comments/related restoration and reset. They explicitly reported actual **1.5× retained after page reload and following a video link**. Step 1 confirmed the specified source install and version 0.3.0; the agent did not independently inspect an installed digest or automate the personal profile. The direct user reply and full checklist/results are retained in the owning task's private acceptance evidence.
+
+This satisfies the requested five-step normal-profile gate for that configuration, with no reported conflict. It does not grant publication/archive authority or establish every interaction. Normal-profile whole-browser process-restart persistence and opt-in sponsor skipping remain unrun. Historical 0.1.0 failure evidence below is preserved; the successful current 1.5× reload/navigation report supersedes its open recheck status for those tested scenarios.
 
 ## 0.2.0 playback update
 
 Nine local tests, manifest/syntax checks, a dependency-free build and 21 assembled Brave fixture outcomes passed on 17 October 2026. Six live public-video checks passed in an isolated headless profile with actual Enhancer 3.0.19 enabled, covering saved speed before/after reload, volume/mute, wheel controls, range loops and deliberate speed changes. All owned browser processes used `--mute-audio`. See [candidate identities, scenarios, preserved failures and scope](ENHANCER_FEATURES.md).
 
-The speed reset is fixed for these tested conditions. 0.2.0 normal-profile acceptance remains pending; the historical 0.1.0 failure below is not erased. New controls use existing permissions; no Enhancer code or assets are bundled.
+The speed reset is fixed for these tested conditions. At the 0.2.0 checkpoint, normal-profile acceptance was pending; the later user-reported 0.3.0 playback checks are recorded above. The historical 0.1.0 failure below is not erased. New controls use existing permissions; no Enhancer code or assets are bundled.
 
 ## Historical 0.1.0 evidence
 
@@ -40,14 +46,14 @@ A signed-out live Brave smoke check opened the public Big Buck Bunny video `aqz-
 
 One read-only public SponsorBlock hash-prefix request returned HTTP 200 with an array response. It contained no matching segment record for the selected video; that is not an observed live sponsor skip. Sponsor seek correctness is covered by the controlled Brave integration fixture. No submission, vote, account login, or billing operation was performed.
 
-## Normal Brave profile: partially verified
+## Historical 0.1.0 normal Brave profile: partially verified
 
 On 17 October 2026, native UI checks verified the unpacked 0.1.0 extension in the user's existing Windows Brave profile, with Enhancer for YouTube 3.0.19 enabled and existing protections preserved. Installation, toolbar/popup connection, pause/resume, exact ten-second forward/rewind, manual speed changes, saved settings/queue across page reloads, internal YouTube navigation, and one manual queued transition passed.
 
-**Open failure:** a saved 1.5× default remained in storage but actual playback returned to 1× after reloading the video. This is a demonstrated normal-profile failure; competition with another speed controller is an inference, not an isolated cause. Original 1× settings were restored. See the [scenario evidence and reproduction](validation/normal-brave-2026-10-17.md).
+**Historical 0.1.0 failure:** a saved 1.5× default remained in storage but actual playback returned to 1× after reloading the video. This was a demonstrated normal-profile failure; competition with another speed controller was an inference, not an isolated cause. Original 1× settings were restored. See the [scenario evidence and reproduction](validation/normal-brave-2026-10-17.md). The later user-reported 0.3.0 reload/navigation success is recorded above; this original failure remains part of the history.
 
 This was author-performed UI verification and self-review, not independent review. Personal screenshots, account information and browsing history are excluded from the repository. No runtime code or release artifact changed during this check.
 
 ## Remaining coverage
 
-Normal-profile acceptance remains partial: the historical saved-speed failure is fixed in isolated testing but still awaits a normal-profile recheck. 0.3.0 appearance controls also await normal-profile acceptance. Normal-profile sponsor skipping and full browser-process restart persistence were not exercised. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.
+The five-step 0.3.0 normal-profile checklist is user-reported passed, including the saved-speed recheck and appearance controls; broader acceptance is bounded by the specific scenarios above. Normal-profile sponsor skipping and full browser-process restart persistence were not exercised. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.
