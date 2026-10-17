@@ -2,6 +2,7 @@
 (async () => {
   if (globalThis.__smarttubeBrowserLoaded) return;
   globalThis.__smarttubeBrowserLoaded = true;
+  const initialUrl = location.href;
   const {sanitizeSettings, normalizeSegments, segmentAt, videoIdFromUrl, createQueueMediaTracker, CATEGORIES} = await import(chrome.runtime.getURL('core.js'));
   const {createAppearance} = await import(chrome.runtime.getURL('appearance.js'));
   let settings = sanitizeSettings();
@@ -9,7 +10,7 @@
   let video = null, videoId = null, segments = [], generation = 0, status = 'Sponsor skipping is off';
   let host = null, shadow = null, lastSource = '', nextPending = false, attemptedEnd = null;
   let queueConfirmed = '', confirmingQueue = false;
-  const queueMedia = createQueueMediaTracker(videoIdFromUrl(location.href));
+  const queueMedia = createQueueMediaTracker(videoIdFromUrl(initialUrl));
   let speedKey = '', speedStartup = null, manualSpeed = false;
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;

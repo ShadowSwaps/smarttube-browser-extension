@@ -1,8 +1,28 @@
-# Queue recovery and discreet controls: 0.4.1 repair candidate
+# Queue recovery and discreet controls: 0.4.2 final repair candidate
+
+Separate targeted pass 2 closed QC-R1-003 (popup lifetime) and verified the bounded 0.4.1 live natural-end scenario. Two original high blockers remained; this is their final authorized repair batch, submitted for pass 3 verification. No author acceptance or additional review round is claimed. Previous candidates, findings and evidence remain historical below.
+
+## Final scoped corrections
+
+**QC-R1-001:** the tracker preserves a nonempty source boundary across URL changes, `loadstart`, `emptied` and metadata. Loading/metadata events cannot authorize the unchanged old source. It still rejects the old source if it returns after an intervening different source. The initial document URL is captured before asynchronous imports. A genuinely different target source, or a fresh document completing its initial load, can establish association; unknown/ambiguous media stays queued. Initial ad media alone cannot confirm content; a distinct later content source can. Unit and actual Brave fixture regressions exercise unchanged-source reloads, empty-source cycles, never-loaded target, later genuine source, copied old-source media and fresh documents.
+
+**QC-R1-002:** a session receipt records whether the origin was in the queue at selection. Confirmation consumes the origin only when that membership bit is explicitly true. An absent origin deliberately added while the target is pending is retained, including across worker restart. Missing membership bits conservatively retain the origin. Existing before-write invalidation still protects remove/re-add, two-tab and diversion cases. No saved queue schema or migration changed. Closed popup behavior and controls were not reopened.
+
+Final-source author checks passed: **18 unit tests, 28 broad fixture outcomes, 14 queue/control fixture outcomes, 10 live compatibility checks, 14 live layout checks and 5 live queue/control checks**. Syntax/permission checks, build and package verification passed. All owned browser launches/restarts were isolated/headless with `--mute-audio`; selected unmodified Enhancer 3.0.19 was used for compatibility/layout. No new dependency, service, spending, permissions, settings override or normal-profile installation.
+
+Affected live evidence was revalidated on 0.4.2: signed-out public `jNQXAC9IVRw` (19.021 s) played naturally from **1.383042 s** to a trusted native ended event at **19.021 s**, without seeking. One NEXT_QUEUE selected `aqz-KE-bpKQ`, whose distinct loaded non-ad media played unpaused at **3.243432 s**, with queue consumption verified. Automatic off also left URL/queue unchanged after natural end. The preliminary 0.4.2 attempt reached the destination but read YouTube's autoplay-switch state before its asynchronous update settled; that failure is preserved. The harness now waits for the off state after its one click, preserving the assertion. The frozen final run passed; no indefinite retry was used.
+
+Exact final reports: `test-results/queue-controls-fixture-1792246496420/report.json`, `test-results/queue-controls-live-1792246474699/report.json`, `test-results/compatibility-1792246474091/report.json`, `test-results/brave-acceptance-1792246472535/report.json`, and the stable private `repair2-browser-report.json`. Commands, file/report identities and coverage limits are in `.investigation-tools/workflow/queue-controls/repair2-evidence-index.json`. Preliminary runs are not substituted for final-source results.
+
+Local package **0.4.2**: `dist/smarttube-browser-extension-0.4.2.zip`, SHA-256 **99e6b11fd077cec1cc62001782293549282be1fbec93f9c74ac30a9f3691ad4c**; all **17** entries match build and all extension source files match built copies. Earlier ZIPs are preserved.
+
+Cumulative review: **2 passes / 1 completed repair-verification round**; final repair round 2 awaits targeted pass 3. If blockers remain at that limit, checkpoint for the human; the coordinator cannot extend or reset it. Reviewer verification and coordinator acceptance remain pending. Normal-profile 0.4.2 installation, Chrome/Edge, broader layouts/accessibility, native action-popup UI and real sponsor-bearing content remain unrun/outside this evidence. No push, release or archive occurred.
+
+## Historical 0.4.1 repair candidate
 
 Repair round 1 addresses all three findings from separate non-author pass 1. The repairs below are author-verified; reviewer verification and coordinator acceptance remain pending. No release or normal-profile installation was performed. The original 0.4.0 evidence and failures are preserved below.
 
-## Scoped repairs and evidence
+### Scoped repairs and evidence
 
 - **QC-R1-001 — media transition:** URL changes no longer associate still-playing old media with a queued destination. Confirmation requires a fresh watch document or an observed media source/load transition, loaded unpaused non-ad media, a positive playback position and a played range. The old media, a copied node with the same source, or a stray metadata event cannot confirm a URL-first target. A real later reload can confirm it. If the transition is ambiguous, the queue stays saved.
 - **QC-R1-002 — queue membership:** before removal or consumption, invalidate every session receipt referencing the affected origin/target IDs. A later deliberate re-add cannot be consumed by a stale second tab. Unrelated navigation cancels that tab's receipt. Invalidation precedes the local write so interruption may retain entries for manual recovery; it does not delete new memberships. Existing queue/schema and permissions are unchanged. Tests cover both origin and target remove/re-add, two tabs, diversion, delayed confirmation and worker restart with session state retained.
@@ -19,11 +39,11 @@ Local package **0.4.1**: `dist/smarttube-browser-extension-0.4.1.zip`, SHA-256 *
 
 Pass 1 found three blockers; the owner submits all three repairs together for targeted pass 2 verification. No blocker is author-closed. The cumulative budget remains one comprehensive review plus at most two repair/verification rounds. Normal-profile 0.4.1 installation was unrequested/unrun; Chrome/Edge, broader layouts/accessibility, native action-popup UI and real sponsor-bearing content remain outside these checks. No push, release, chat/agent creation or archive occurred.
 
-## Historical 0.4.0 candidate
+### Historical 0.4.0 candidate
 
 This is a local implementation and author self-check checkpoint dated 17 October 2026. Separate non-author review is required for queue storage/recovery. Actual live end-to-end queue completion remains unverified. No publication or normal-profile installation was performed; earlier 0.3.0 normal-profile acceptance does not accept this version.
 
-### Behavior
+#### Behavior
 
 The player normally shows a subdued 30 × 28 px ST button in its upper-right corner. Click/tap or keyboard Enter/Space opens the existing playback tools, status and Undo. The panel wraps and scrolls within the player, reserving space above native bottom controls. Hidden tools have no hit targets or tab stops. Focused tools remain open until deliberately closed; Escape closes them and returns focus to ST before cinema handles a further Escape. No animation was introduced.
 
@@ -31,7 +51,7 @@ Queue selection excludes the current video and retains the saved entries until t
 
 Delayed/failed navigation and unavailable content retain the queue. The source entry, if queued, also remains until destination confirmation. Retry through the popup's queue list or explicitly remove unwanted entries. There is no automatic skip of unavailable content. Browser restart clears session receipts and retains the queue; an interrupted selection may consequently remain queued for manual retry/removal. Automatic continuation stays opt-in and yields to whole-video/A–B looping. Repeated ended events cannot issue repeated automatic attempts for the same ended playback; deliberate replay or Next can try again. A slow navigation blocks overlapping Next requests for ten seconds. Popup opening is also guarded against overlapping clicks.
 
-### Author verification
+#### Author verification
 
 All test-owned browsers used headless isolated Brave **155.0.8059.85** and `--mute-audio`, including process restarts. No personal browser data, desktop input, system audio changes, paid services or new dependencies were used. Live coexistence used the selected unmodified Enhancer **3.0.19**, with a fresh 1× override configuration.
 
@@ -49,7 +69,7 @@ The live completion attempts encountered initial restricted DNS, a consent-dialo
 
 Author screenshot inspection found native-control overlap in the initial narrow expanded panel despite its earlier containment check. The panel height and acceptance check were corrected before the final runs; the final narrow screenshot leaves at least 55 px below the panel. Other preserved pre-candidate failures were obsolete harness assumptions about panel visibility after Escape/SPA and post-navigation layout readiness. No acceptance review passes were consumed by these author self-checks.
 
-### Package and remaining gates
+#### Package and remaining gates
 
 Local package: `dist/smarttube-browser-extension-0.4.0.zip`, SHA-256 **a9d40151b96017a212d6fca6956c4a48c301f4cc08bc1557506d8f07889f6553**. All **17** file entries match the build; all extension source files match their built copies. The historical 0.3.0 ZIP was preserved. Exact file hashes are in `.investigation-tools/workflow/queue-controls/package-identity.json` and per-run reports.
 

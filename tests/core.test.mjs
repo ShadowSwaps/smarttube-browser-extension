@@ -8,9 +8,21 @@ test('URL-first SPA cannot associate old media or stray metadata with queued tar
   tracker.observe('B',media);tracker.metadata('B',media);
   for(let i=0;i<5;i++){tracker.observe('B',media);assert.equal(tracker.matches('B',media),false,'target never loads; old A remains unconfirmed');}
   const clone={currentSrc:'blob:old-A'};tracker.observe('B',clone);assert.equal(tracker.matches('B',clone),false,'copying old media is not a target transition');
+  for(let i=0;i<3;i++) {
+    tracker.loading('B',clone);tracker.metadata('B',clone);
+    assert.equal(tracker.matches('B',clone),false,'unchanged old source cannot become B through a load cycle');
+    clone.currentSrc='';tracker.loading('B',clone);tracker.observe('B',clone);
+    clone.currentSrc='blob:old-A';tracker.metadata('B',clone);
+    assert.equal(tracker.matches('B',clone),false,'emptied media must not erase the original source boundary');
+  }
   tracker.loading('B',clone);clone.currentSrc='blob:target-B';tracker.metadata('B',clone);assert(tracker.matches('B',clone));
+  clone.currentSrc='blob:old-A';tracker.loading('B',clone);tracker.metadata('B',clone);assert.equal(tracker.matches('B',clone),false,'returning to original A remains blocked');
+  clone.currentSrc='blob:target-B';tracker.metadata('B',clone);assert(tracker.matches('B',clone));
   tracker.observe(null,clone);tracker.observe('B',clone);assert.equal(tracker.matches('B',clone),false,'an ad/unrelated URL transition invalidates prior association');
   const fresh=createQueueMediaTracker('B');fresh.observe('B',clone);assert(fresh.matches('B',clone),'fresh watch document can confirm its own media');
+  const loading={currentSrc:''},freshLoading=createQueueMediaTracker('B');freshLoading.observe('B',loading);freshLoading.loading('B',loading);loading.currentSrc='blob:first-B';freshLoading.metadata('B',loading);assert(freshLoading.matches('B',loading),'fresh document can finish its initial media load');
+  const late=createQueueMediaTracker('A'),lateMedia={currentSrc:'blob:old-A'};late.observe('B',lateMedia);assert.equal(late.matches('B',lateMedia),false,'initial document URL captured before imports cannot be replaced by later SPA URL');
+  const ad={currentSrc:'blob:ad'},afterAd=createQueueMediaTracker('B');afterAd.observe(null,ad);afterAd.observe('B',ad);assert.equal(afterAd.matches('B',ad),false,'ending ad state alone cannot confirm ad media as target');ad.currentSrc='blob:content-B';afterAd.metadata('B',ad);assert(afterAd.matches('B',ad),'a distinct content source after the initial ad is real transition evidence');
 });
 test('video identities reject external hosts and malformed IDs',() => {
   assert.equal(videoIdFromUrl('https://www.youtube.com/watch?v=abcdefghijk'),'abcdefghijk');

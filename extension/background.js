@@ -139,7 +139,10 @@ async function handle(message, sender) {
     // the queue, including across browser restarts. Session receipts contain
     // no new persistent queue schema and survive service-worker suspension.
     const tabId = page ? message.tabId : sender.tab?.id;
-    if (item && Number.isInteger(tabId)) await chrome.storage.session.set({[`queue:${tabId}`]:{from:message.currentVideoId,target:item.videoId}});
+    if (item && Number.isInteger(tabId)) await chrome.storage.session.set({[`queue:${tabId}`]:{
+      from:message.currentVideoId,target:item.videoId,
+      consumeFrom:queue.some(entry => entry.videoId === message.currentVideoId)
+    }});
     return {ok:true,item};
   });
   if (message.type === 'QUEUE_CONTEXT' && sender.frameId === 0 && sender.url?.startsWith('https://www.youtube.com/') && message.videoId === sourceVideoId && Number.isInteger(sender.tab?.id)) return mutate(async () => {
@@ -159,7 +162,7 @@ async function handle(message, sender) {
     const {settings,queue} = await readState();
     if (!settings.enabled) return {ok:false};
     await invalidateQueueReceipts([receipt.target,receipt.from]);
-    await chrome.storage.local.set({queue:queue.filter(item => item.videoId !== receipt.target && item.videoId !== receipt.from)});
+    await chrome.storage.local.set({queue:queue.filter(item => item.videoId !== receipt.target && !(receipt.consumeFrom === true && item.videoId === receipt.from))});
     return {ok:true};
   });
   return {ok:false,error:'Unsupported request'};

@@ -77,25 +77,30 @@ export function formatTime(seconds) {
 // Associate playback with a URL only after a media/document transition. SPA
 // navigation can update the URL while the previous video's media keeps playing.
 export function createQueueMediaTracker(initialId) {
-  let id = initialId, media = null, source = '', loadingFor = null, associated = null;
+  let id = initialId, media = null, source = '', excludedSource = null, navigated = false, associated = null;
   return {
     observe(nextId, nextMedia) {
       const nextSource = nextMedia?.currentSrc || '';
-      const changedSource = Boolean(nextSource && source && nextSource !== source);
-      const firstMedia = !media && nextMedia && nextId === initialId;
-      if (nextId !== id) { associated = null; loadingFor = null; }
-      id = nextId;
-      if (firstMedia || changedSource) associated = id;
-      media = nextMedia; source = nextSource;
+      if (nextId !== id) { excludedSource = source || excludedSource; navigated = true; }
+      id = nextId; media = nextMedia;
+      associated = null;
+      // Empty/ad media and load events cannot erase the last known source.
+      // In a SPA target, reloading that unchanged source is still old media.
+      if (!nextId) {
+        if (!source && nextSource) { source = nextSource; excludedSource = nextSource; }
+        return;
+      }
+      if (!nextSource) return;
+      if (navigated && !excludedSource) excludedSource = nextSource;
+      if ((!navigated && nextId === initialId) || (excludedSource && nextSource !== excludedSource)) associated = id;
+      source = nextSource;
     },
     loading(nextId, nextMedia) {
       this.observe(nextId,nextMedia);
-      associated = null; loadingFor = nextId;
+      associated = null;
     },
     metadata(nextId, nextMedia) {
       this.observe(nextId,nextMedia);
-      if (loadingFor === nextId) associated = nextId;
-      loadingFor = null;
     },
     matches(nextId, nextMedia) { return associated === nextId && media === nextMedia; }
   };

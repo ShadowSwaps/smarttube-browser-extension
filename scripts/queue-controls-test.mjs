@@ -48,6 +48,7 @@ async function ready() {
   const autoplay=page.locator('.ytp-autonav-toggle-button');
   await autoplay.waitFor({state:'attached',timeout:10000});
   if(await autoplay.getAttribute('aria-checked')==='true') await autoplay.click();
+  await page.waitForFunction(()=>document.querySelector('.ytp-autonav-toggle-button')?.getAttribute('aria-checked')==='false',{},{timeout:5000});
   assert.equal(await autoplay.getAttribute('aria-checked'),'false','Disable native site autoplay in this test-owned profile to isolate extension queue behavior');
  }
 }
@@ -199,9 +200,24 @@ try {
   await page.locator('video').evaluate(v=>{v.loop=true;v.currentTime=.5;return v.play();});
   await page.evaluate(id=>{history.pushState({},'',`/watch?v=${id}`);document.dispatchEvent(new Event('yt-navigate-finish'));},B);
   await page.waitForTimeout(1200);assert.deepEqual(await queue(),[A,B,C],'URL B with old A still playing cannot consume queue');
+  await page.locator('video').evaluate(v=>{v.load();return v.play();});await ready();await page.waitForTimeout(700);
+  assert.deepEqual(await queue(),[A,B,C],'loadstart/metadata for unchanged old A must not confirm B');
+  await page.locator('video').evaluate(v=>{v.removeAttribute('src');v.load();});await page.waitForTimeout(200);
+  await page.locator('video').evaluate(v=>{v.src='/fixture.wav';v.load();return v.play();});await ready();await page.waitForTimeout(700);
+  assert.deepEqual(await queue(),[A,B,C],'emptied then old-A reload must retain the queue');
   await page.locator('video').evaluate(v=>{v.src='/fixture.wav?actual-target=B';v.load();return v.play();});
   for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
   assert.deepEqual(await queue(),[C]);await shot('spa-real-target-playing');await control.close();
+ });
+ if(!live) await check('Origin added after queue selection survives actual destination playback',async()=>{
+  await state({enabled:true,toolbar:true,autoQueue:false},[B,C]);
+  await page.goto(`https://www.youtube.com/watch?v=${A}`);await ready();
+  const control=await context.newPage();await control.goto(`chrome-extension://${new URL(worker.url()).hostname}/options.html`);await page.bringToFront();
+  const tabId=await control.evaluate(async()=>{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return tab.id;});
+  await control.evaluate(async({tabId,A})=>{await chrome.runtime.sendMessage({type:'NEXT_QUEUE',currentVideoId:A,tabId});await chrome.runtime.sendMessage({type:'ADD_QUEUE',item:{videoId:A,title:'new intentional origin entry'}});},{tabId,A});
+  await page.goto(`https://www.youtube.com/watch?v=${B}`);await ready();
+  for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
+  assert.deepEqual(await queue(),[C,A]);await shot('new-origin-retained');await control.close();
  });
  report.result='passed';
 } catch(error) {report.result='failed';report.stage=stage;report.error=error.stack;report.url=page?.url();report.queue=await queue().catch(()=>null);report.media=await page?.locator('#movie_player video').first().evaluate(v=>({readyState:v.readyState,seeking:v.seeking,time:v.currentTime,duration:v.duration,paused:v.paused,ended:v.ended,error:v.error?.message,advertising:Boolean(v.closest('.ad-showing,.ad-interrupting'))})).catch(()=>null);await shot('failure').catch(()=>{});process.exitCode=1;}

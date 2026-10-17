@@ -96,6 +96,17 @@ test('SPA sender document URL can be stale but current tab identity must match',
 
 const at=(id,tab=7)=>({...sender,tab:{id:tab,url:`https://www.youtube.com/watch?v=${id}`}});
 const add=async(request,ids,title='saved')=>{for(const videoId of ids)await request({type:'ADD_QUEUE',item:{videoId,title}});};
+test('origin absent at selection and deliberately added before confirmation survives, including worker restart',async()=>{
+  for(const restart of [false,true]) {
+    let h=await harness();await add(h.request,['lmnopqrstuv','12345678901']);
+    await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
+    await add(h.request,[videoId],'new intentional origin entry');
+    if(restart)h=await h.restart();
+    await h.request({type:'QUEUE_PLAYING',videoId:'lmnopqrstuv'},at('lmnopqrstuv'));
+    assert.deepEqual(h.data.queue.map(x=>x.videoId),['12345678901',videoId]);
+    assert.equal(h.data.queue[1].title,'new intentional origin entry');
+  }
+});
 test('explicit removal and identical re-add of either origin or target cancels the old receipt',async()=>{
   for(const removed of [videoId,'lmnopqrstuv']) {
     let h=await harness();await add(h.request,[videoId,'lmnopqrstuv','12345678901']);

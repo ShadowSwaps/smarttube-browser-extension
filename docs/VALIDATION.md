@@ -1,5 +1,9 @@
 # Validation status
 
+## 0.4.2 final scoped repair candidate
+
+The two remaining pass-2 blockers have author-verified corrections submitted together for the final permitted pass-3 verification. Final-source checks passed: 18 unit tests, 28 broad and 14 queue/control fixture outcomes, 10 live compatibility, 14 live layout and 5 live queue/control checks. Natural-end queue continuation was revalidated on the changed runtime. Exact source/package evidence, retained preliminary failure and limits are in [the queue/control record](QUEUE_CONTROLS.md). No acceptance is claimed; an unresolved blocker after this final round requires a human checkpoint. Earlier candidate records below remain historical.
+
 ## 0.4.1 scoped repair candidate
 
 All three pass-1 blockers have author-verified repairs submitted together for non-author verification. Final-source checks passed: 17 unit tests, 28 broad and 13 queue/control fixture outcomes, 10 live compatibility, 14 live layout and 5 live queue/control checks. The new live attempt played a demonstrably short public source naturally through a trusted native end, selected one queued destination, verified its actual non-ad playback and queue consumption. This supplies live evidence for review; it is not author acceptance. See [exact reports, package and retained limits](QUEUE_CONTROLS.md). Normal-profile installation remains unrequested/unrun; the earlier 0.4.0 checkpoint below is historical.
