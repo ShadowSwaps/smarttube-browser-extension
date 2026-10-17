@@ -2,7 +2,7 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**Status: v0.1.0 developer preview.** Tested in real Brave extension contexts and a signed-out live YouTube scenario. The initial install is manual; this is not a Chrome Web Store listing.
+**Status: v0.1.0 developer preview.** Tested in real Brave extension contexts, a signed-out live YouTube scenario, and selected normal-profile scenarios with another player extension enabled. A saved-speed override after video reload remains unresolved; see [validation status](docs/VALIDATION.md). The initial install is manual; this is not a Chrome Web Store listing.
 
 ## First version
 
@@ -21,6 +21,8 @@ This is an independent community project, not an official SmartTube port. YouTub
 3. Select **Load unpacked** and choose the repository's **extension** folder, which contains `manifest.json`.
 4. Refresh any open YouTube tabs, then open a video on `https://www.youtube.com`.
 5. Pin SmartTube Browser from Brave's extensions menu to access the popup. Sponsor skipping is off until you enable it.
+
+Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing manifest, return to the folder containing `manifest.json` and select that folder.
 
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 

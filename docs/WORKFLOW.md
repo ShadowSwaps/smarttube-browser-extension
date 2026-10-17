@@ -33,7 +33,7 @@ Use short checkpoints with source/evidence links and exact remaining work. Fresh
 
 ## Current normal-profile acceptance
 
-The developer preview has historical disposable-Brave and signed-out live-site evidence in VALIDATION.md. The human has now explicitly requested installation and acceptance in their existing Brave profile. That is a separate pending gate, not established by those earlier tests.
+The developer preview has historical disposable-Brave and signed-out live-site evidence in VALIDATION.md. User-authorized installation and normal-profile UI checks were subsequently performed on 17 October 2026. Installation and the tested controls, persistence and navigation scenarios passed, while a saved-speed override after video reload failed. Normal-profile acceptance is partial; see [the scenario report](validation/normal-brave-2026-10-17.md). Earlier fixture results do not supersede this observed failure.
 
 The normal-profile check should establish installation/enabled state, toolbar and popup operation, play/pause/seek/speed, settings and queue persistence, navigation behavior, existing Shields/extension interactions and any opt-in sponsor behavior actually exercised. Preserve existing protections and account state. Do not restart the human's whole browser without agreement; a full normal-profile process-restart check can remain unrun while other checks proceed.
 

@@ -1,6 +1,6 @@
 # Validation status
 
-Version 0.1.0 is an initial unpacked extension, validated on 17 October 2026 with installed Brave (Chromium engine 155.0.8059.85), using disposable test profiles. No personal browser profile or signed-in YouTube account was used. Chrome and Edge are implementation targets using the same Manifest V3 APIs; they have not been separately exercised here.
+Version 0.1.0 is an initial unpacked extension. Initial validation on 17 October 2026 used installed Brave (Chromium engine 155.0.8059.85) with disposable profiles and signed-out YouTube. A subsequent user-authorized normal-profile check is documented separately below. Chrome and Edge are implementation targets using the same Manifest V3 APIs; they have not been separately exercised here.
 
 ## Local checks
 
@@ -22,6 +22,14 @@ A signed-out live Brave smoke check opened the public Big Buck Bunny video `aqz-
 
 One read-only public SponsorBlock hash-prefix request returned HTTP 200 with an array response. It contained no matching segment record for the selected video; that is not an observed live sponsor skip. Sponsor seek correctness is covered by the controlled Brave integration fixture. No submission, vote, account login, or billing operation was performed.
 
+## Normal Brave profile: partially verified
+
+On 17 October 2026, native UI checks verified the unpacked 0.1.0 extension in the user's existing Windows Brave profile, with Enhancer for YouTube 3.0.19 enabled and existing protections preserved. Installation, toolbar/popup connection, pause/resume, exact ten-second forward/rewind, manual speed changes, saved settings/queue across page reloads, internal YouTube navigation, and one manual queued transition passed.
+
+**Open failure:** a saved 1.5× default remained in storage but actual playback returned to 1× after reloading the video. This is a demonstrated normal-profile failure; competition with another speed controller is an inference, not an isolated cause. Original 1× settings were restored. See the [scenario evidence and reproduction](validation/normal-brave-2026-10-17.md).
+
+This was author-performed UI verification and self-review, not independent review. Personal screenshots, account information and browsing history are excluded from the repository. No runtime code or release artifact changed during this check.
+
 ## Remaining coverage
 
-Manual testing is still useful on the user's normal Brave setup, including Shields and any other player extensions. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.
+Normal-profile acceptance remains partial because the saved-speed failure is open. Normal-profile sponsor skipping and full browser-process restart persistence were not exercised. Full YouTube account workflows, every layout/locale, real sponsor-bearing content, live streams, Shorts variations, every keyboard/accessibility combination, multiple queued autoplay transitions, Chrome, Edge, and other operating systems are not comprehensively validated. The extension uses the existing YouTube player and does not claim independent playback or guaranteed ad removal. The Windows app has not been started.
