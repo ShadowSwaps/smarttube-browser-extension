@@ -8,7 +8,7 @@ const extension=path.resolve('dist/extension');
 await mkdir('test-results',{recursive:true});
 const context=await chromium.launchPersistentContext(path.resolve(`.local/brave-live-${Date.now()}`),{
   executablePath:process.env.BRAVE_PATH || path.join(process.env.PROGRAMFILES || 'C:/Program Files','BraveSoftware/Brave-Browser/Application/brave.exe'),
-  headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--autoplay-policy=no-user-gesture-required','--disable-component-update','--disable-brave-update']
+  headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--mute-audio','--autoplay-policy=no-user-gesture-required','--disable-component-update','--disable-brave-update']
 });
 try {
   const page=await context.newPage();

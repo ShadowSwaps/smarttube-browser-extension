@@ -32,6 +32,8 @@ Review the actual final diff and relevant evidence. Record reviewer identity and
 
 Use the project's headless Brave/Playwright setup with an isolated workspace profile for routine browser tests and screenshot review. It runs independently of the human's mouse, keyboard and personal browser session. Keep native desktop automation out of this route. Existing scripts use disposable profiles; a persistent compatibility profile may be introduced only with explicitly selected test extensions/settings. Never clone the human's profile, cookies, accounts or browsing history to populate it. A separate visible browser window still shares the desktop and does not provide input isolation.
 
+Keep every test-owned Brave instance silent: pass `--mute-audio` on every launch and restart, including fixture, live-site and ad hoc review sessions. Headless mode alone is not the silence policy. Preserve the human's normal browser volume and Windows audio settings; any audible test requires the human's explicit request.
+
 Install and test in the normal profile only when requested. Preserve existing settings, Shields, extensions, accounts and tabs. Do not weaken protections or remove another extension to obtain a pass. Use a dedicated test tab, restore temporary player preferences where practical, and avoid publishing browsing history, account details, cookies or screenshots containing personal information.
 
 Record the exact installed source/version and actual outcomes for toolbar, popup, playback, local persistence, navigation and relevant extension interactions. Keep any unperformed cases pending. If a UI tool stops for a policy or URL-verification failure, stop that route and report the concrete blocker; do not bypass it through another control path.

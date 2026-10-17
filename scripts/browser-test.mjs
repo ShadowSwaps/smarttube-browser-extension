@@ -12,7 +12,7 @@ const profile = path.resolve(`.local/brave-test-${Date.now()}`);
 const extension = path.resolve('dist/extension');
 const launchOptions = {
   executablePath,headless:true,viewport:{width:1100,height:850},
-  args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--autoplay-policy=no-user-gesture-required','--disable-brave-update','--disable-component-update']
+  args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--mute-audio','--autoplay-policy=no-user-gesture-required','--disable-brave-update','--disable-component-update']
 };
 let context = await chromium.launchPersistentContext(profile,launchOptions);
 const results = [];
