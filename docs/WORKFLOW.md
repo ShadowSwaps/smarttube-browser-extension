@@ -4,6 +4,8 @@ Adopted for SmartTube Browser on 17 October 2026 at the human's request. These p
 
 ## Coordinator and task ownership
 
+Every task-chat checkpoint and final reply must give an explicit human destination: **STAY IN THIS TASK CHAT** for requested input/tests or active scoped repairs, or **RETURN TO SMARTTUBE COORDINATOR** for review, scope decisions, closure or next-task selection. Explain why, state the next human action/input or **No action needed**, and identify the responsible owner and return condition. An intermediate review handoff can return the human to the coordinator while the task retains repairs and pending gates. Routing alone changes no ownership, acceptance, completion or archive status.
+
 The human adopted coordinator/task routing and bounded review on 17 October 2026. SmartTube Coordinator retains scope decisions, acceptance, publication decisions and closure bookkeeping. Each substantial authorized feature or coherent policy task uses a fresh chat with selected sources and [a saved handoff](TASK_HANDOFF_TEMPLATE.md), rather than a full-history fork. Small repairs remain in the owning task. Fresh tasks share account allowance; no usage saving is claimed from changing chats.
 
 This authorizes scoped task-chat creation/coordination and recoverable archiving of verified completed tasks. It does not authorize agents, unrelated external messages, schedulers, runtime automation, permanent deletion, worktree cleanup or the next feature. Each action must remain within the human's scope and publication authority. Task workers do not create other chats or send cross-chat updates unless their handoff explicitly authorizes it; use saved results and completion events where available. Keep the coordinator open.

@@ -4,18 +4,19 @@ import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 import {webcrypto} from 'node:crypto';
 import * as core from '../extension/core.js';
-async function harness(fetcher = async () => new Response('[]')) {
-  const data = {};
-  const session = {};
+async function harness(fetcher = async () => new Response('[]'),saved = {}) {
+  const data = saved.data || {};
+  const session = saved.session || {};
   let listener;
   const chrome = {
+    tabs:saved.tabs,
     runtime:{id:'test',getURL:file => `chrome-extension://test/${file}`,onMessage:{addListener:fn => {listener=fn;}},onInstalled:{addListener:() => {}}},
-    storage:{local:{get:async keys => Object.fromEntries(keys.filter(key => key in data).map(key => [key,structuredClone(data[key])])),set:async items => Object.assign(data,structuredClone(items))},session:{get:async keys => Object.fromEntries(keys.filter(key => key in session).map(key => [key,structuredClone(session[key])])),set:async items => Object.assign(session,structuredClone(items)),remove:async key => {delete session[key];}}}
+    storage:{local:{get:async keys => Object.fromEntries(keys.filter(key => key in data).map(key => [key,structuredClone(data[key])])),set:async items => Object.assign(data,structuredClone(items))},session:{get:async keys => Object.fromEntries((keys || Object.keys(session)).filter(key => key in session).map(key => [key,structuredClone(session[key])])),set:async items => Object.assign(session,structuredClone(items)),remove:async keys => {for(const key of Array.isArray(keys)?keys:[keys])delete session[key];}}}
   };
   const source = (await readFile(new URL('../extension/background.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
   vm.runInNewContext(source,{...core,chrome,fetch:fetcher,crypto:webcrypto,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL,console});
   const request = (message,sender={id:'test',url:'chrome-extension://test/options.html'}) => new Promise(resolve => listener(message,sender,resolve));
-  return {request,data,session};
+  return {request,data,session,dispatch:(message,sender,respond=()=>{})=>listener(message,sender,respond),restart:()=>harness(fetcher,{data,session,tabs:saved.tabs})};
 }
 const videoId='abcdefghijk';
 const sender={id:'test',frameId:0,url:`https://www.youtube.com/watch?v=${videoId}`,tab:{id:7,url:`https://www.youtube.com/watch?v=${videoId}`}};
@@ -91,4 +92,61 @@ test('SPA sender document URL can be stale but current tab identity must match',
   assert.equal((await request({type:'SEGMENTS',videoId},navigated)).ok,false);
   assert.equal((await request({type:'SEGMENTS',videoId:'lmnopqrstuv'},{...navigated,frameId:2})).ok,false);
   assert.equal(calls,1);
+});
+
+const at=(id,tab=7)=>({...sender,tab:{id:tab,url:`https://www.youtube.com/watch?v=${id}`}});
+const add=async(request,ids,title='saved')=>{for(const videoId of ids)await request({type:'ADD_QUEUE',item:{videoId,title}});};
+test('explicit removal and identical re-add of either origin or target cancels the old receipt',async()=>{
+  for(const removed of [videoId,'lmnopqrstuv']) {
+    let h=await harness();await add(h.request,[videoId,'lmnopqrstuv','12345678901']);
+    await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
+    await h.request({type:'REMOVE_QUEUE',videoId:removed});await add(h.request,[removed]);
+    h=await h.restart();await h.request({type:'QUEUE_PLAYING',videoId:'lmnopqrstuv'},at('lmnopqrstuv'));
+    assert.equal(h.data.queue.length,3,`new ${removed} membership must survive stale confirmation`);
+  }
+});
+test('consumption invalidates second-tab receipts before intentional identical-ID re-adds, including worker restart',async()=>{
+  let h=await harness();const {data}=h;const ids=[videoId,'lmnopqrstuv','12345678901'];
+  await add(h.request,ids);
+  await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},at(videoId,7));
+  await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},at(videoId,8));
+  await h.request({type:'QUEUE_PLAYING',videoId:ids[1]},at(ids[1],7));
+  await add(h.request,ids.slice(0,2),'saved');
+  h=await h.restart();
+  await h.request({type:'QUEUE_CONTEXT',videoId:ids[2]},at(ids[2],8));
+  await h.request({type:'QUEUE_PLAYING',videoId:ids[1]},at(ids[1],8));
+  assert.deepEqual(data.queue.map(x=>x.videoId),[ids[2],ids[0],ids[1]],'stale tab must not consume deliberately re-added rows');
+});
+test('remove/re-add and diversion invalidate receipts durably; unchanged delayed selection still confirms',async()=>{
+  let h=await harness();const ids=[videoId,'lmnopqrstuv','12345678901'];await add(h.request,ids);
+  await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
+  await h.request({type:'REMOVE_QUEUE',videoId:ids[1]});await add(h.request,[ids[1]]);
+  h=await h.restart();await h.request({type:'QUEUE_PLAYING',videoId:ids[1]},at(ids[1]));
+  assert.equal(h.data.queue.length,3);
+  await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
+  await h.request({type:'QUEUE_CONTEXT',videoId:ids[1]},at(ids[1]));
+  h=await h.restart();await h.request({type:'QUEUE_PLAYING',videoId:ids[2]},at(ids[2]));
+  assert.equal(h.data.queue.length,3,'diversion cancels the pending target');
+  const selected=await h.request({type:'NEXT_QUEUE',currentVideoId:videoId},sender);
+  h=await h.restart();await h.request({type:'QUEUE_PLAYING',videoId:selected.item.videoId},at(selected.item.videoId));
+  assert.deepEqual(h.data.queue.map(x=>x.videoId),[ids[1]],'unchanged selection survives worker suspension and consumes its original memberships');
+});
+test('worker owns inactive tab setup and final navigation despite lost initiating response and duplicate requests',async()=>{
+  let release;const wait=new Promise(resolve=>{release=resolve;});const calls=[];
+  const tabs={create:async options=>{calls.push(['create',options]);await wait;return {id:42};},update:async(id,options)=>{calls.push(['update',id,options]);return {id};},remove:async id=>calls.push(['remove',id])};
+  const h=await harness(undefined,{tabs});await add(h.request,[videoId,'lmnopqrstuv']);
+  const extensionPage={id:'test',url:'chrome-extension://test/popup.html'};
+  h.dispatch({type:'OPEN_QUEUE'},extensionPage); // No live receiver: popup has gone away.
+  const duplicate=h.request({type:'OPEN_QUEUE'},extensionPage);
+  await new Promise(resolve=>setTimeout(resolve,0));assert.equal(calls.length,1);release();
+  assert.equal((await duplicate).ok,true);assert.equal(calls.filter(x=>x[0]==='create').length,1);
+  assert.equal(calls[0][1].url,'about:blank');assert.equal(calls[0][1].active,false);
+  assert.equal(calls[1][2].url,`https://www.youtube.com/watch?v=${videoId}`);assert.equal(calls[1][2].active,true);
+  assert.equal(h.data.queue.length,2,'opening cannot consume before playback');
+  await h.request({type:'QUEUE_PLAYING',videoId},at(videoId,42));assert.deepEqual(h.data.queue.map(x=>x.videoId),['lmnopqrstuv']);
+});
+test('worker-owned popup navigation failure cleans up its blank tab and receipt without losing queue',async()=>{
+  const removed=[];const tabs={create:async()=>({id:42}),update:async()=>{throw Error('navigation failed');},remove:async id=>removed.push(id)};
+  const h=await harness(undefined,{tabs});await add(h.request,[videoId]);
+  assert.equal((await h.request({type:'OPEN_QUEUE'})).ok,false);assert.deepEqual(removed,[42]);assert.equal(h.data.queue.length,1);assert.deepEqual(h.session,{});
 });

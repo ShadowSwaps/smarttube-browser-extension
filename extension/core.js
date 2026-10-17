@@ -73,3 +73,30 @@ export function formatTime(seconds) {
   const value = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
   return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
 }
+
+// Associate playback with a URL only after a media/document transition. SPA
+// navigation can update the URL while the previous video's media keeps playing.
+export function createQueueMediaTracker(initialId) {
+  let id = initialId, media = null, source = '', loadingFor = null, associated = null;
+  return {
+    observe(nextId, nextMedia) {
+      const nextSource = nextMedia?.currentSrc || '';
+      const changedSource = Boolean(nextSource && source && nextSource !== source);
+      const firstMedia = !media && nextMedia && nextId === initialId;
+      if (nextId !== id) { associated = null; loadingFor = null; }
+      id = nextId;
+      if (firstMedia || changedSource) associated = id;
+      media = nextMedia; source = nextSource;
+    },
+    loading(nextId, nextMedia) {
+      this.observe(nextId,nextMedia);
+      associated = null; loadingFor = nextId;
+    },
+    metadata(nextId, nextMedia) {
+      this.observe(nextId,nextMedia);
+      if (loadingFor === nextId) associated = nextId;
+      loadingFor = null;
+    },
+    matches(nextId, nextMedia) { return associated === nextId && media === nextMedia; }
+  };
+}

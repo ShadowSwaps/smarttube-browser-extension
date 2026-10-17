@@ -16,6 +16,7 @@ Use this selected-source brief for a substantial authorized task, repair, review
 - Actual model/reasoning/speed (or explicitly unavailable), proposed model/reasoning/speed and reason; configured defaults/no override unless explicitly authorized; no claimed control change without evidence:
 - Latest usage check/time, minimum remaining across usable windows including weekly, unavailable windows and 10%/4% decision if applicable:
 - Writer reservation, stopped/idle state of any prior owner, next gate and exact next action/decision destination:
+- Human routing, also explicit in every checkpoint/final reply: **STAY IN THIS TASK CHAT** or **RETURN TO SMARTTUBE COORDINATOR**; why; next human action/input or **No action needed**; responsible owner and return condition:
 
 ## Result and return record
 
@@ -27,6 +28,7 @@ Use this selected-source brief for a substantial authorized task, repair, review
 - Authorized publication destination/action, performed result and verified remote/artifact identity; otherwise explicitly pending, unnecessary or unauthorized:
 - Remaining scoped fixes/checks/required inputs; separate backlog or unrequested installation; exact next action, responsible chat and return condition:
 - Current task idle/active confirmation and writer state; evidence saved before ownership transfer:
+- Explicit human destination (**STAY IN THIS TASK CHAT** or **RETURN TO SMARTTUBE COORDINATOR**), why, required human action/input or **No action needed**, responsible owner and return condition. Distinguish this routing from retained repair ownership and completion; an intermediate review handoff does not pass gates, transfer the writer or permit archive:
 - Coordinator acceptance identity/evidence; closure eligibility and exact archive target; archive authorization, observed result/time and recoverable reference if actually archived:
 
 The owning task remains responsible for scoped corrections and authorized release verification until resolved. Return to SmartTube Coordinator for final closure when those obligations are closed; a finished implementation turn alone is an intermediate handoff. The coordinator must verify the exact completed, idle chat and saved evidence before recoverable archive. Keep the coordinator open and preserve pending items when checkpointing.

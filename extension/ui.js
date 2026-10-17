@@ -143,14 +143,8 @@ async function init() {
       queueOpening = true; render();
       try {
         if (player?.videoId) { await control('next'); return; }
-        const result = await send({type:'NEXT_QUEUE'});
+        const result = await send({type:'OPEN_QUEUE'});
         if (!result.ok) throw new Error();
-        if (result.item) {
-          const opened = await chrome.tabs.create({url:'about:blank'});
-          const selected = await send({type:'NEXT_QUEUE',tabId:opened.id});
-          if (!selected.ok || !selected.item) { await chrome.tabs.remove(opened.id); throw new Error(); }
-          await chrome.tabs.update(opened.id,{url:`https://www.youtube.com/watch?v=${selected.item.videoId}`});
-        }
       }
       catch { feedback('Could not open the next video.'); }
       finally { queueOpening = false; render(); }

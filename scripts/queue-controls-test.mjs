@@ -16,7 +16,7 @@ const report={kind:live?'live signed-out YouTube':'deterministic HTML/native med
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 for(const file of await readdir(extension)) if(file.endsWith('.js') || file==='manifest.json') report.candidate[file]=hash(await readFile(path.join(extension,file)));
 report.harness=hash(await readFile(new URL(import.meta.url)));
-const A=live?'M7lc1UVf-VE':'abcdefghijk',B=live?'aqz-KE-bpKQ':'lmnopqrstuv',C='12345678901';
+const A=live?'jNQXAC9IVRw':'abcdefghijk',B=live?'aqz-KE-bpKQ':'lmnopqrstuv',C='12345678901';
 let context,worker,page,unavailable=false,abort=false,stage='launch';
 const media=Buffer.alloc(44+4*8000*2);
 media.write('RIFF');media.writeUInt32LE(media.length-8,4);media.write('WAVEfmt ',8);media.writeUInt32LE(16,16);media.writeUInt16LE(1,20);media.writeUInt16LE(1,22);media.writeUInt32LE(8000,24);media.writeUInt32LE(16000,28);media.writeUInt16LE(2,32);media.writeUInt16LE(16,34);media.write('data',36);media.writeUInt32LE(media.length-44,40);
@@ -35,7 +35,7 @@ async function launchBrowser() {
   return route.fulfill({contentType:'text/html',body:`<!doctype html><title>Queue fixture - YouTube</title><style>body{background:#14181e;color:white;margin:30px;height:2000px;font:16px system-ui}#movie_player{position:relative;width:min(800px,100%);aspect-ratio:16/9;background:#25282e}video{width:100%;height:100%}</style><h1 class="ytd-watch-metadata">Queue fixture ${url.searchParams.get('v')}</h1><div id="movie_player" class="html5-video-player"><video src="/fixture.wav" autoplay muted controls></video></div><button onclick="document.querySelector('#movie_player').requestFullscreen()">Fixture fullscreen</button>`});
  });
  worker=context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
- await worker.evaluate(()=>{globalThis.__queueEvents=[];chrome.runtime.onMessage.addListener((m,s)=>{if(['NEXT_QUEUE','QUEUE_PLAYING'].includes(m.type))globalThis.__queueEvents.push({type:m.type,current:m.currentVideoId,video:m.videoId,tab:s.tab?.id});});});
+ await worker.evaluate(()=>{globalThis.__queueEvents=[];chrome.runtime.onMessage.addListener((m,s)=>{if(['NEXT_QUEUE','QUEUE_PLAYING','OPEN_QUEUE','QUEUE_CONTEXT'].includes(m.type))globalThis.__queueEvents.push({type:m.type,current:m.currentVideoId,video:m.videoId,tab:s.tab?.id});});});
  page=await context.newPage();
  page.on('pageerror',error=>report.events.push({type:'pageerror',message:error.message}));
 }
@@ -53,11 +53,16 @@ async function ready() {
 }
 async function shot(name){await page.screenshot({path:path.join(output,`${name}.png`)});}
 async function ended() {
- // Seek near the real end, then let the media clock produce a native ended.
+ // Live: let a short public source play through naturally. Fixtures seek near
+ // the end of their local media, then wait for a trusted native ended event.
  if(live) {
+  const source=await page.locator('#movie_player video').evaluate(v=>({duration:v.duration,position:v.currentTime,seeking:v.seeking,src:v.currentSrc}));
+  assert(source.duration>0 && source.duration<=45 && source.position<source.duration*.25 && !source.seeking,'Live completion must start early in demonstrably short content without seeking');
+  report.events.push({naturalPlayback:source});
   const control=page.locator('.ytp-play-button');
   if(await page.locator('#movie_player video').evaluate(v=>v.paused)) await control.click();
   await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return !v.paused && v.currentTime>0 && !v.closest('.ad-showing,.ad-interrupting');});
+  return;
  }
  await page.locator('#movie_player video').evaluate(v=>{v.currentTime=v.duration-(v.duration>10?2:.35);});
  await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return !v.seeking&&v.readyState>=2&&!v.closest('.ad-showing,.ad-interrupting');});
@@ -111,7 +116,7 @@ try {
   });
  }
  await check('Real native media end with automatic queue off leaves URL and queue unchanged',async()=>{
-  await ended();await page.waitForFunction(()=>document.querySelector('video')?.ended);await page.waitForTimeout(800);
+  await ended();await page.waitForFunction(()=>document.querySelector('video')?.ended,{},{timeout:45000});await page.waitForTimeout(800);
   assert.equal(new URL(page.url()).searchParams.get('v'),A);assert.deepEqual(await queue(),[A,B,C]);
  });
  if(!live) {
@@ -153,7 +158,7 @@ try {
   await worker.evaluate(()=>{globalThis.__queueEvents=[];});
   await page.exposeFunction('__recordQueueEnd',event=>report.events.push({nativeEnd:event}));
   await page.evaluate(()=>{document.querySelector('#movie_player video').addEventListener('ended',e=>window.__recordQueueEnd({trusted:e.isTrusted,ended:e.target.ended,time:e.target.currentTime,duration:e.target.duration}));});
-  await ended();await page.waitForURL(`**watch?v=${B}`,{timeout:25000});await ready();
+  await ended();await page.waitForURL(`**watch?v=${B}`,{timeout:45000});await ready();
   await page.locator('video').first().evaluate(v=>v.play());
   await page.waitForFunction(()=>{const v=document.querySelector('#movie_player video');return !v.paused&&v.currentTime>0&&!v.closest('.ad-showing,.ad-interrupting');});
   for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
@@ -166,15 +171,37 @@ try {
   for(let i=0;i<25 && (await queue()).length;i++)await page.waitForTimeout(200);
   assert.deepEqual(await queue(),[]);await ended();await page.waitForFunction(()=>document.querySelector('video')?.ended);await page.waitForTimeout(700);assert.equal(new URL(page.url()).searchParams.get('v'),C);
  });
- if(!live) await check('Disconnected popup Next opens one destination tab and consumes only after playback',async()=>{
+ if(!live) await check('Disconnected Next survives initiating document destruction during delayed worker setup',async()=>{
   await state({enabled:true,toolbar:true,autoQueue:false},[B,C]);
   const extensionId=new URL(worker.url()).hostname;
   const popup=await context.newPage();await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await popup.bringToFront();await popup.reload();await popup.getByText('Open a video on YouTube',{exact:true}).waitFor();
   const before=context.pages().length;
+  await worker.evaluate(()=>{
+   globalThis.__originalCreate=chrome.tabs.create;
+   chrome.tabs.create=async options=>{globalThis.__openStarted=true;await new Promise(resolve=>{globalThis.__releaseOpen=resolve;});return globalThis.__originalCreate(options);};
+  });
   await popup.locator('#next').evaluate(button=>{button.click();button.click();});
+  for(let i=0;i<30 && !await worker.evaluate(()=>globalThis.__openStarted);i++)await page.waitForTimeout(100);
+  assert(await worker.evaluate(()=>globalThis.__openStarted));
+  await popup.close(); // Model the initiating action-popup document being destroyed.
+  await worker.evaluate(()=>{chrome.tabs.create=globalThis.__originalCreate;globalThis.__releaseOpen();});
   for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
-  assert.equal(context.pages().length,before+1);assert.deepEqual(await queue(),[C]);
+  assert.equal(context.pages().length,before);assert.deepEqual(await queue(),[C]);
+ });
+ if(!live) await check('URL-first SPA keeps old playing media unconfirmed until target media actually reloads',async()=>{
+  await state({enabled:true,toolbar:true,autoQueue:false},[A,B,C]);
+  await page.goto(`https://www.youtube.com/watch?v=${A}`);await ready();
+  const control=await context.newPage();await control.goto(`chrome-extension://${new URL(worker.url()).hostname}/options.html`);
+  await page.bringToFront();
+  const tabId=await control.evaluate(async()=>{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return tab.id;});
+  await control.evaluate(tabId=>chrome.runtime.sendMessage({type:'NEXT_QUEUE',currentVideoId:'abcdefghijk',tabId}),tabId);
+  await page.locator('video').evaluate(v=>{v.loop=true;v.currentTime=.5;return v.play();});
+  await page.evaluate(id=>{history.pushState({},'',`/watch?v=${id}`);document.dispatchEvent(new Event('yt-navigate-finish'));},B);
+  await page.waitForTimeout(1200);assert.deepEqual(await queue(),[A,B,C],'URL B with old A still playing cannot consume queue');
+  await page.locator('video').evaluate(v=>{v.src='/fixture.wav?actual-target=B';v.load();return v.play();});
+  for(let i=0;i<30 && (await queue()).includes(B);i++)await page.waitForTimeout(200);
+  assert.deepEqual(await queue(),[C]);await shot('spa-real-target-playing');await control.close();
  });
  report.result='passed';
 } catch(error) {report.result='failed';report.stage=stage;report.error=error.stack;report.url=page?.url();report.queue=await queue().catch(()=>null);report.media=await page?.locator('#movie_player video').first().evaluate(v=>({readyState:v.readyState,seeking:v.seeking,time:v.currentTime,duration:v.duration,paused:v.paused,ended:v.ended,error:v.error?.message,advertising:Boolean(v.closest('.ad-showing,.ad-interrupting'))})).catch(()=>null);await shot('failure').catch(()=>{});process.exitCode=1;}

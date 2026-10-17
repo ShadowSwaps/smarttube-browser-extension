@@ -1,5 +1,9 @@
 # Validation status
 
+## 0.4.1 scoped repair candidate
+
+All three pass-1 blockers have author-verified repairs submitted together for non-author verification. Final-source checks passed: 17 unit tests, 28 broad and 13 queue/control fixture outcomes, 10 live compatibility, 14 live layout and 5 live queue/control checks. The new live attempt played a demonstrably short public source naturally through a trusted native end, selected one queued destination, verified its actual non-ad playback and queue consumption. This supplies live evidence for review; it is not author acceptance. See [exact reports, package and retained limits](QUEUE_CONTROLS.md). Normal-profile installation remains unrequested/unrun; the earlier 0.4.0 checkpoint below is historical.
+
 ## 0.4.0 queue and compact-controls candidate
 
 Local implementation and author checks are recorded in [Queue recovery and discreet controls](QUEUE_CONTROLS.md). Required separate non-author review and real live end-to-end queue completion remain pending. Public media reset or showed a YouTube playback error when seeking near the end; fixture completion is recorded separately. Earlier normal-profile acceptance below applies to 0.3.0.

@@ -1,8 +1,29 @@
-# Queue recovery and discreet controls: 0.4.0 candidate
+# Queue recovery and discreet controls: 0.4.1 repair candidate
+
+Repair round 1 addresses all three findings from separate non-author pass 1. The repairs below are author-verified; reviewer verification and coordinator acceptance remain pending. No release or normal-profile installation was performed. The original 0.4.0 evidence and failures are preserved below.
+
+## Scoped repairs and evidence
+
+- **QC-R1-001 — media transition:** URL changes no longer associate still-playing old media with a queued destination. Confirmation requires a fresh watch document or an observed media source/load transition, loaded unpaused non-ad media, a positive playback position and a played range. The old media, a copied node with the same source, or a stray metadata event cannot confirm a URL-first target. A real later reload can confirm it. If the transition is ambiguous, the queue stays saved.
+- **QC-R1-002 — queue membership:** before removal or consumption, invalidate every session receipt referencing the affected origin/target IDs. A later deliberate re-add cannot be consumed by a stale second tab. Unrelated navigation cancels that tab's receipt. Invalidation precedes the local write so interruption may retain entries for manual recovery; it does not delete new memberships. Existing queue/schema and permissions are unchanged. Tests cover both origin and target remove/re-add, two tabs, diversion, delayed confirmation and worker restart with session state retained.
+- **QC-R1-003 — popup lifetime:** disconnected Next dispatches one worker-owned operation, which creates an inactive tab, saves its receipt, then navigates and activates it. The popup has no navigation continuation after dispatch. Overlapping opens coalesce; failed navigation cleans up the operation's blank tab/receipt and retains the queue. Browser testing destroys the initiating extension document during deliberately delayed worker setup. This demonstrates lifetime independence; it is not a claim of native action-popup UI automation.
+- Human-authorized routing guidance in AGENTS.md, WORKFLOW.md and TASK_HANDOFF_TEMPLATE.md now requires STAY/RETURN destination, why, required action or No action needed, responsible owner and return condition. Routing remains separate from ownership, acceptance and archive eligibility; review mechanics and authority are unchanged.
+
+Final assembled 0.4.1 author checks: **17 unit tests**, **28 broad fixture outcomes**, **13 queue/control fixture outcomes**, **10 live compatibility checks**, **14 live layout checks** and **5 live queue/control checks** passed. Syntax/permission checks, build and the local package passed. Brave **155.0.8059.85** was always headless, isolated and launched/restarted with `--mute-audio`; live compatibility/layout used selected unmodified Enhancer **3.0.19** with fresh settings. Existing tools/allowances only.
+
+The live gate now has qualifying author evidence: the public signed-out **Me at the zoo** source (`jNQXAC9IVRw`, **19.021 s**) was played naturally from **2.624852 s** through a trusted native ended event at **19.021 s**, with no near-end seek. Exactly one NEXT_QUEUE selected Big Buck Bunny (`aqz-KE-bpKQ`), whose actual loaded non-ad media was unpaused at **2.383669 s**; queue consumption was verified. Automatic continuation off also reached the source's real end without changing URL/queue. Native site autoplay was disabled only in the disposable profile to isolate extension behavior. This one bounded attempt changed the failed near-end-seeking cause; earlier streaming failures remain historical evidence. The live gate awaits non-author/coordinator verification, rather than author self-acceptance.
+
+Exact-source reports and screenshots: `test-results/queue-controls-fixture-1792245344771/report.json`, `test-results/queue-controls-live-1792245355643/report.json`, `test-results/compatibility-1792245376129/report.json`, `test-results/brave-acceptance-1792245377470/report.json`, plus the broad fixture report saved privately as `repair1-browser-report.json`. Commands/logs and file/report hashes are indexed in `.investigation-tools/workflow/queue-controls/repair1-evidence-index.json`. Earlier source results have their own identities and are not represented as final-source acceptance.
+
+Local package **0.4.1**: `dist/smarttube-browser-extension-0.4.1.zip`, SHA-256 **2aae891b65f1403b9cfcdba03f6bd5e51d0679d00205848dc4e8fb26540b5340**. All **17** entries match the build and all extension sources match their built bytes. Historical 0.4.0 and earlier ZIPs were preserved.
+
+Pass 1 found three blockers; the owner submits all three repairs together for targeted pass 2 verification. No blocker is author-closed. The cumulative budget remains one comprehensive review plus at most two repair/verification rounds. Normal-profile 0.4.1 installation was unrequested/unrun; Chrome/Edge, broader layouts/accessibility, native action-popup UI and real sponsor-bearing content remain outside these checks. No push, release, chat/agent creation or archive occurred.
+
+## Historical 0.4.0 candidate
 
 This is a local implementation and author self-check checkpoint dated 17 October 2026. Separate non-author review is required for queue storage/recovery. Actual live end-to-end queue completion remains unverified. No publication or normal-profile installation was performed; earlier 0.3.0 normal-profile acceptance does not accept this version.
 
-## Behavior
+### Behavior
 
 The player normally shows a subdued 30 × 28 px ST button in its upper-right corner. Click/tap or keyboard Enter/Space opens the existing playback tools, status and Undo. The panel wraps and scrolls within the player, reserving space above native bottom controls. Hidden tools have no hit targets or tab stops. Focused tools remain open until deliberately closed; Escape closes them and returns focus to ST before cinema handles a further Escape. No animation was introduced.
 
@@ -10,7 +31,7 @@ Queue selection excludes the current video and retains the saved entries until t
 
 Delayed/failed navigation and unavailable content retain the queue. The source entry, if queued, also remains until destination confirmation. Retry through the popup's queue list or explicitly remove unwanted entries. There is no automatic skip of unavailable content. Browser restart clears session receipts and retains the queue; an interrupted selection may consequently remain queued for manual retry/removal. Automatic continuation stays opt-in and yields to whole-video/A–B looping. Repeated ended events cannot issue repeated automatic attempts for the same ended playback; deliberate replay or Next can try again. A slow navigation blocks overlapping Next requests for ten seconds. Popup opening is also guarded against overlapping clicks.
 
-## Author verification
+### Author verification
 
 All test-owned browsers used headless isolated Brave **155.0.8059.85** and `--mute-audio`, including process restarts. No personal browser data, desktop input, system audio changes, paid services or new dependencies were used. Live coexistence used the selected unmodified Enhancer **3.0.19**, with a fresh 1× override configuration.
 
@@ -28,7 +49,7 @@ The live completion attempts encountered initial restricted DNS, a consent-dialo
 
 Author screenshot inspection found native-control overlap in the initial narrow expanded panel despite its earlier containment check. The panel height and acceptance check were corrected before the final runs; the final narrow screenshot leaves at least 55 px below the panel. Other preserved pre-candidate failures were obsolete harness assumptions about panel visibility after Escape/SPA and post-navigation layout readiness. No acceptance review passes were consumed by these author self-checks.
 
-## Package and remaining gates
+### Package and remaining gates
 
 Local package: `dist/smarttube-browser-extension-0.4.0.zip`, SHA-256 **a9d40151b96017a212d6fca6956c4a48c301f4cc08bc1557506d8f07889f6553**. All **17** file entries match the build; all extension source files match their built copies. The historical 0.3.0 ZIP was preserved. Exact file hashes are in `.investigation-tools/workflow/queue-controls/package-identity.json` and per-run reports.
 

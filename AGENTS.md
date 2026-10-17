@@ -14,6 +14,8 @@ Search before reading, select relevant evidence, batch independent reads, and fi
 
 ## Coordinator and policy routing
 
+Every task-chat checkpoint and final reply must explicitly say **STAY IN THIS TASK CHAT** or **RETURN TO SMARTTUBE COORDINATOR**, explain why, and state the next human action/input or **No action needed**. Name the responsible owner and return condition. Human routing does not establish acceptance, completion, writer transfer or archive eligibility: an intermediate review handoff may return the human to the coordinator while the task retains scoped repairs and open gates.
+
 The human-adopted coordinator/task procedure is in [docs/WORKFLOW.md](docs/WORKFLOW.md). Read it at task start and ownership/closure boundaries; use [docs/TASK_HANDOFF_TEMPLATE.md](docs/TASK_HANDOFF_TEMPLATE.md) for dispatch and return. The SmartTube Coordinator chooses bounded authorized scope. Substantial work uses a fresh task chat with selected sources; small repairs stay with its owner. Scoped task-chat coordination and recoverable completion-based archiving are authorized; this does not authorize agents, schedulers, unrelated messages, new features or publication. One writer remains in force.
 
 Read [docs/REVIEW_POLICY.md](docs/REVIEW_POLICY.md) before choosing a review path, reviewing or repairing findings. Preserve inherited mandatory gates. Allow one comprehensive review plus at most two repair-and-verification rounds per work item across chat, reviewer and commit changes. Unresolved blockers at the limit require a checkpoint; only explicit human authorization can extend this budget. The coordinator cannot grant more rounds, auto-pass blockers or reset cumulative counts.

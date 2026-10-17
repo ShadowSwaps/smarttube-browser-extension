@@ -3,6 +3,7 @@ import { CATEGORIES, VIDEO_ID, sanitizeSettings, sanitizeQueue, videoIdFromUrl }
 let writes = Promise.resolve();
 const cache = new Map();
 const pending = new Map();
+let openingQueue = null;
 const CACHE_TTL = 30 * 60 * 1000;
 async function readState() {
   const stored = await chrome.storage.local.get(['settings', 'queue']);
@@ -15,6 +16,12 @@ function mutate(operation) {
 }
 function isExtensionPage(sender) {
   return sender.id === chrome.runtime.id && sender.url?.startsWith(chrome.runtime.getURL(''));
+}
+async function invalidateQueueReceipts(ids) {
+  ids = ids.filter(Boolean);
+  const receipts = await chrome.storage.session.get(null);
+  const keys = Object.entries(receipts).filter(([key,value]) => key.startsWith('queue:') && (ids.includes(value?.from) || ids.includes(value?.target))).map(([key]) => key);
+  if (keys.length) await chrome.storage.session.remove(keys);
 }
 async function sponsorSegments(videoId, categories) {
   const key = `${videoId}:${categories.slice().sort().join(',')}`;
@@ -95,9 +102,35 @@ async function handle(message, sender) {
   if (message.type === 'REMOVE_QUEUE' && page) return mutate(async () => {
     const {queue} = await readState();
     const next = queue.filter(item => item.videoId !== message.videoId);
+    // Invalidate before changing membership. A crash between these operations
+    // can retain data for retry, but cannot consume a later re-added row.
+    await invalidateQueueReceipts([message.videoId]);
     await chrome.storage.local.set({queue:next});
     return {ok:true,queue:next};
   });
+  if (message.type === 'OPEN_QUEUE' && page) {
+    // Own the whole operation in the worker: activating a tab can destroy an
+    // action popup before its next await resumes. Coalesce overlapping opens.
+    if (!openingQueue) openingQueue = mutate(async () => {
+      const {queue} = await readState();
+      const item = queue[0];
+      if (!item) return {ok:true,item:null};
+      let tab;
+      try {
+        tab = await chrome.tabs.create({url:'about:blank',active:false});
+        await chrome.storage.session.set({[`queue:${tab.id}`]:{target:item.videoId}});
+        await chrome.tabs.update(tab.id,{url:`https://www.youtube.com/watch?v=${item.videoId}`,active:true});
+        return {ok:true,item};
+      } catch {
+        if (tab) {
+          await chrome.storage.session.remove(`queue:${tab.id}`);
+          await chrome.tabs.remove(tab.id).catch(() => {});
+        }
+        return {ok:false,error:'Could not open video. Queue saved.'};
+      }
+    }).finally(() => { openingQueue = null; });
+    return openingQueue;
+  }
   if (message.type === 'NEXT_QUEUE' && (page || (sourceVideoId && sourceVideoId === message.currentVideoId))) return mutate(async () => {
     const {settings,queue} = await readState();
     if (!page && (!settings.enabled || (message.automatic && !settings.autoQueue))) return {ok:false};
@@ -109,14 +142,24 @@ async function handle(message, sender) {
     if (item && Number.isInteger(tabId)) await chrome.storage.session.set({[`queue:${tabId}`]:{from:message.currentVideoId,target:item.videoId}});
     return {ok:true,item};
   });
+  if (message.type === 'QUEUE_CONTEXT' && sender.frameId === 0 && sender.url?.startsWith('https://www.youtube.com/') && message.videoId === sourceVideoId && Number.isInteger(sender.tab?.id)) return mutate(async () => {
+    const key = `queue:${sender.tab.id}`;
+    const receipt = (await chrome.storage.session.get([key]))[key];
+    if (receipt && receipt.target !== sourceVideoId && receipt.from !== sourceVideoId) await chrome.storage.session.remove(key);
+    return {ok:true};
+  });
   if (message.type === 'QUEUE_PLAYING' && sourceVideoId && sourceVideoId === message.videoId && Number.isInteger(sender.tab?.id)) return mutate(async () => {
     const key = `queue:${sender.tab.id}`;
     const receipt = (await chrome.storage.session.get([key]))[key];
-    if (!receipt || receipt.target !== sourceVideoId) return {ok:true};
+    if (!receipt) return {ok:true};
+    if (receipt.target !== sourceVideoId) {
+      if (receipt.from !== sourceVideoId) await chrome.storage.session.remove(key);
+      return {ok:true};
+    }
     const {settings,queue} = await readState();
     if (!settings.enabled) return {ok:false};
+    await invalidateQueueReceipts([receipt.target,receipt.from]);
     await chrome.storage.local.set({queue:queue.filter(item => item.videoId !== receipt.target && item.videoId !== receipt.from)});
-    await chrome.storage.session.remove(key);
     return {ok:true};
   });
   return {ok:false,error:'Unsupported request'};

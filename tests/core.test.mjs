@@ -1,6 +1,17 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {videoIdFromUrl,sanitizeSettings,sanitizeQueue,normalizeSegments,segmentAt,videoFilterCss} from '../extension/core.js';
+import {videoIdFromUrl,sanitizeSettings,sanitizeQueue,normalizeSegments,segmentAt,videoFilterCss,createQueueMediaTracker} from '../extension/core.js';
+
+test('URL-first SPA cannot associate old media or stray metadata with queued target; real reload or fresh document can',() => {
+  const tracker=createQueueMediaTracker('A'),media={currentSrc:'blob:old-A'};
+  tracker.observe('A',media);assert(tracker.matches('A',media));
+  tracker.observe('B',media);tracker.metadata('B',media);
+  for(let i=0;i<5;i++){tracker.observe('B',media);assert.equal(tracker.matches('B',media),false,'target never loads; old A remains unconfirmed');}
+  const clone={currentSrc:'blob:old-A'};tracker.observe('B',clone);assert.equal(tracker.matches('B',clone),false,'copying old media is not a target transition');
+  tracker.loading('B',clone);clone.currentSrc='blob:target-B';tracker.metadata('B',clone);assert(tracker.matches('B',clone));
+  tracker.observe(null,clone);tracker.observe('B',clone);assert.equal(tracker.matches('B',clone),false,'an ad/unrelated URL transition invalidates prior association');
+  const fresh=createQueueMediaTracker('B');fresh.observe('B',clone);assert(fresh.matches('B',clone),'fresh watch document can confirm its own media');
+});
 test('video identities reject external hosts and malformed IDs',() => {
   assert.equal(videoIdFromUrl('https://www.youtube.com/watch?v=abcdefghijk'),'abcdefghijk');
   assert.equal(videoIdFromUrl('https://www.youtube.com/shorts/abcdefghijk'),'abcdefghijk');

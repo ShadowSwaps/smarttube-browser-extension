@@ -2,13 +2,14 @@
 (async () => {
   if (globalThis.__smarttubeBrowserLoaded) return;
   globalThis.__smarttubeBrowserLoaded = true;
-  const {sanitizeSettings, normalizeSegments, segmentAt, videoIdFromUrl, CATEGORIES} = await import(chrome.runtime.getURL('core.js'));
+  const {sanitizeSettings, normalizeSegments, segmentAt, videoIdFromUrl, createQueueMediaTracker, CATEGORIES} = await import(chrome.runtime.getURL('core.js'));
   const {createAppearance} = await import(chrome.runtime.getURL('appearance.js'));
   let settings = sanitizeSettings();
   let savedEnabled = settings.enabled;
   let video = null, videoId = null, segments = [], generation = 0, status = 'Sponsor skipping is off';
   let host = null, shadow = null, lastSource = '', nextPending = false, attemptedEnd = null;
   let queueConfirmed = '', confirmingQueue = false;
+  const queueMedia = createQueueMediaTracker(videoIdFromUrl(location.href));
   let speedKey = '', speedStartup = null, manualSpeed = false;
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;
@@ -77,7 +78,7 @@
     finally { if (current === videoId) nextPending = false; }
   }
   async function confirmQueue() {
-    if (!playable() || isAd() || video.paused || video.ended || video.readyState < 2 || video.currentTime <= 0 || queueConfirmed === videoId || confirmingQueue) return;
+    if (!playable() || isAd() || !queueMedia.matches(videoId,video) || video.error || video.paused || video.ended || video.readyState < 2 || !video.played.length || video.currentTime <= 0 || queueConfirmed === videoId || confirmingQueue) return;
     const current = videoId;
     confirmingQueue = true;
     try { if ((await send({type:'QUEUE_PLAYING',videoId:current})).ok && current === videoId) queueConfirmed = current; }
@@ -199,7 +200,8 @@
     if (!open) entry.focus();
   }
   function onEnded() { if (video?.ended && settings.autoQueue && !loopEnabled && !isAd()) next(true); }
-  function onMetadata() { sync(); }
+  function onQueueLoad() { queueMedia.loading(isAd() ? null : videoIdFromUrl(location.href),video); queueConfirmed = ''; }
+  function onMetadata() { queueMedia.metadata(isAd() ? null : videoIdFromUrl(location.href),video); sync(); }
   function applySpeed() {
     if (!playable() || !settings.applySpeed || isAd() || manualSpeed || video.readyState < 1) return;
     if (!speedStartup) return;
@@ -215,11 +217,12 @@
   function sync() {
     const nextId = videoIdFromUrl(location.href);
     const found = nextId ? [...document.querySelectorAll('video')].find(item => item.offsetWidth > 0 && !item.ended) || document.querySelector('video') : null;
-    if (nextId !== videoId) { clearLoop(); videoId = nextId; nextPending = false; attemptedEnd = null; queueConfirmed = ''; speedKey = ''; resetSpeed(); loadSegments(); }
+    queueMedia.observe(found?.closest('.ad-showing,.ad-interrupting') ? null : nextId,found);
+    if (nextId !== videoId) { clearLoop(); videoId = nextId; nextPending = false; attemptedEnd = null; queueConfirmed = ''; speedKey = ''; resetSpeed(); loadSegments(); send({type:'QUEUE_CONTEXT',videoId}); }
     if (found !== video) {
-      if (video) { video.removeEventListener('timeupdate',tick); video.removeEventListener('ended',onEnded); video.removeEventListener('loadedmetadata',onMetadata); }
+      if (video) { video.removeEventListener('timeupdate',tick); video.removeEventListener('ended',onEnded); video.removeEventListener('loadedmetadata',onMetadata); video.removeEventListener('loadstart',onQueueLoad); video.removeEventListener('emptied',onQueueLoad); }
       clearLoop(); video = found; speedKey = ''; resetSpeed();
-      if (video) { video.addEventListener('timeupdate',tick); video.addEventListener('ended',onEnded); video.addEventListener('loadedmetadata',onMetadata); }
+      if (video) { video.addEventListener('timeupdate',tick); video.addEventListener('ended',onEnded); video.addEventListener('loadedmetadata',onMetadata); video.addEventListener('loadstart',onQueueLoad); video.addEventListener('emptied',onQueueLoad); }
     }
     if (video) {
       if (video.currentSrc !== lastSource) { lastSource = video.currentSrc; }
