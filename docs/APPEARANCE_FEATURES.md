@@ -43,8 +43,32 @@ Package: `smarttube-browser-extension-0.3.0.zip`, SHA-256 `5a82fa3c1f767b2317c0d
 
 Reviewer: Codex, implementation author. Performed self-review of the actual diff, settings/message boundaries, source/package identities, fixture/live results and popup/options/cinema/player screenshots. This is not independent review or full security certification. Permission and worker authorization boundaries are unchanged.
 
+## Additional isolated Brave gap checks
+
+On 17 October 2026, `node scripts/brave-acceptance-test.mjs` passed 14 focused live checks with the same v0.3.0 extension files and unmodified Enhancer 3.0.19 in a fresh, headless, muted Brave profile (engine `155.0.8059.85`). No extension code or package changed. The checks observed:
+
+- Actual native fullscreen entry and exit through YouTube's control, with `document.fullscreenElement` and `fullscreenchange` events. The fullscreen element was `HTML`. Cinema suspended and resumed, filters remained applied, and a real SmartTube toolbar click sought forward.
+- Aligned cinema panels and uncovered player hit testing at 980×720, 1600×1000 and 1280×900, partial scrolling, deep scrolling with Enhancer's floating player, and return to the normal layout.
+- A real related-link transition from Big Buck Bunny to `B4EPW7JUMTM` within the same document. The site reused its video node. Settled incoming content reported ready state 4, 1.5× playback and no advertising state. Filters, comments/related hide-and-restore and cinema continued to work. Activating the real home link through keyboard focus/Enter cleared active cinema and restored the exact departing video's filter; history navigation back reapplied appearance.
+
+Final local evidence is `.investigation-tools/workflow/brave-acceptance/run-1792241482916/report.json` and its three screenshots. The report hashes all 16 installed extension files and the harness (`dd0e21c3567ea9f5e790ba6e2950280ec75251b0ca0b260502fc1699ec0f2ae2`). The existing ZIP still has SHA-256 `5a82fa3c1f767b2317c0ddc48a4753e2b78ba57c4667d673819dd5ee444de36d`; all 16 extension entries and the root installation note match the build. Prior fixture, playback and package evidence above remains applicable to the unchanged extension; these are additional live checks, not replacement runs of those suites.
+
+Failed setup/assertion runs remain in the private evidence directory: sandbox DNS resolution, consent obstructing geometry, an incorrect expected fullscreen-element ID, and an incorrect offscreen assumption when Enhancer floated the player. A premature SPA speed assertion observed a six-second advertisement at 1×. Screenshot review corrected the initial product-failure attribution; the final harness waits for settled non-ad media, preserving SmartTube's advertising exclusion. No product failure requiring a code change was established.
+
+Reviewer: Codex, author of this test/evidence increment, performed self-review of the actual diff, source/artifact identities, reports and screenshots. Required non-author coordinator review and the user-performed normal-profile checklist remain pending. No push, release or personal-profile automation was performed.
+
+To reproduce with existing local tools and the explicitly selected unmodified reference package:
+
+```powershell
+$env:BROWSER_TEST_PLAYWRIGHT_MODULE = 'C:\path\to\playwright\index.mjs'
+$env:ENHANCER_PATH = 'C:\path\to\unmodified\Enhancer\3.0.19_0'
+node scripts/brave-acceptance-test.mjs
+```
+
+This optional script writes timestamped private workflow evidence and uses its own disposable `.local` profile. It does not download a browser, install packages or use a hosted backend.
+
 ## Limits and update
 
-Normal-profile acceptance of 0.3.0 remains pending. The isolated profile contains the selected reference extension and fresh settings, not every extension/configuration from the human's normal setup. No universal Enhancer parity is claimed. Live chat, Shorts variants, end screens and info cards have controlled selector coverage only; live comments/related checks establish container display restoration, not every recommendation type or lazy-loaded comments workflow. Fullscreen suspension was simulated through the recognized player class in fixtures; native fullscreen, exhaustive scrolling layouts, keyboard/accessibility combinations, Chrome and Edge remain unverified. YouTube may change its selectors. Themes, player resizing, amplification and further backlog items remain deferred.
+Normal-profile acceptance of 0.3.0 remains pending. The isolated profile contains the selected reference extension and fresh settings, not every extension/configuration from the human's normal setup. No universal Enhancer parity is claimed. Live chat, Shorts variants, end screens and info cards have controlled selector coverage only; live comments/related checks establish container display restoration, not every recommendation type or lazy-loaded comments workflow. Earlier fixture fullscreen simulation is now supplemented by the actual native API evidence above. The live SPA transition reused its video node; detached-node replacement remains fixture coverage. Deep scrolling exercised the reference's floating player rather than a live offscreen player. The final return screenshot captures another pre-roll with appearance applied; post-return non-ad speed was not asserted. Exhaustive scrolling layouts, keyboard/accessibility combinations, Chrome and Edge remain unverified. YouTube may change its selectors. Themes, player resizing, amplification and further backlog items remain deferred.
 
 For the existing source install, select **Reload** on SmartTube Browser at `brave://extensions`, then refresh YouTube. Open **Picture and distractions** in the popup or settings; click **Cinema** in the toolbar for a temporary toggle. Existing saved settings and queue are retained.

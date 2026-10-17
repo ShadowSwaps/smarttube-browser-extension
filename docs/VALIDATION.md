@@ -4,7 +4,9 @@
 
 Ten local tests, permission/syntax checks, build, 28 Brave fixture outcomes and ten live public-video checks passed on 17 October 2026. The live checks used actual Enhancer 3.0.19 with fresh settings; every test browser was headless and muted. Cinema, four filters and six distraction switches have bounded evidence in [the appearance requirements and validation record](APPEARANCE_FEATURES.md), including exact source/package identities, preserved harness failure, self-review and remaining coverage. Playback regressions and a full fixture browser-process restart passed. All 17 ZIP file entries match the build.
 
-0.3.0 normal-profile acceptance remains pending. Live comments/related containers were exercised; other hide selectors and recognized fullscreen suspension were fixture-tested. Historical results below retain their original scope.
+Additional isolated Brave testing on the unchanged v0.3.0 package passed 14 live gap checks: actual native fullscreen entry/exit and toolbar seeking, three viewport sizes, partial/deep scrolling with Enhancer's floating player, real same-document video navigation, appearance cleanup/return, and comments/related restoration. The incoming content was confirmed ready and outside advertising state before asserting saved speed. See [the additional evidence, preserved harness failures and exact identities](APPEARANCE_FEATURES.md#additional-isolated-brave-gap-checks). Extension code and package are unchanged; relevant earlier results are retained rather than unnecessarily rerun.
+
+0.3.0 normal-profile acceptance and non-author review of this test/evidence increment remain pending. Live comments/related containers were exercised; other hide selectors and detached-video replacement remain fixture coverage. Native fullscreen now has bounded live API evidence; exhaustive layouts and other browsers remain unverified. Historical results below retain their original scope.
 
 ## 0.2.0 playback update
 
