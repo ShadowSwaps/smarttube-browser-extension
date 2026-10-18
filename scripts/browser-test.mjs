@@ -5,6 +5,7 @@ import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {installNativeVolumeFixture} from './fixtures/native-volume.mjs';
 const modulePath = process.env.BROWSER_TEST_PLAYWRIGHT_MODULE || 'playwright';
 const {chromium} = await import(path.isAbsolute(modulePath) ? pathToFileURL(modulePath).href : modulePath);
 const executablePath = process.env.BRAVE_PATH || path.join(process.env.PROGRAMFILES || 'C:/Program Files','BraveSoftware/Brave-Browser/Application/brave.exe');
@@ -16,6 +17,7 @@ const launchOptions = {
   args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--mute-audio','--autoplay-policy=no-user-gesture-required','--disable-brave-update','--disable-component-update']
 };
 let context = await chromium.launchPersistentContext(profile,launchOptions);
+await context.addInitScript(installNativeVolumeFixture);
 const results = [];
 const idA = 'abcdefghijk', idB = 'lmnopqrstuv', idC = '12345678901';
 const wav = Buffer.alloc(44 + 120*8000*2);
@@ -60,19 +62,19 @@ try {
   assert.equal((await worker.evaluate(() => globalThis.__requests)).length,0);
   results.push('Default settings produce no SponsorBlock requests.');
   // Independent regression: a competing startup controller resets the real
-  // media element after metadata. The saved preference must survive that race.
+  // media element after metadata. Fixed normal startup must survive that race.
   await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1.5}}));
-  await page.waitForFunction(() => document.querySelector('video').playbackRate === 1.5);
-  await page.evaluate(() => setTimeout(() => {document.querySelector('video').playbackRate=1;},650));
+  await page.waitForFunction(() => document.querySelector('video').playbackRate === 1);
+  await page.evaluate(() => setTimeout(() => {document.querySelector('#movie_player').setPlaybackRate(1.5);},650));
   await page.waitForTimeout(1400);
-  assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),1.5);
+  assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),1);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('video')?.readyState >= 1 && document.querySelector('video').playbackRate === 1.5);
+  await page.waitForFunction(() => document.querySelector('video')?.readyState >= 1 && document.querySelector('video').playbackRate === 1);
   await page.waitForTimeout(4300);
   await page.locator('video').evaluate(v=>{v.playbackRate=2;});
   await page.waitForTimeout(700);
   assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),2);
-  results.push('Saved speed survives a delayed competing reset and reload; later manual rates remain unchanged.');
+  results.push('Fixed normal startup ignores legacy saved speed, survives a delayed reset/reload and leaves later manual rates alone.');
   await page.reload();
   await page.waitForSelector('#smarttube-player-entry');
   await page.evaluate(() => {const button=document.createElement('button');button.className='ytp-settings-button';button.textContent='Fixture speed settings';document.querySelector('#movie_player').append(button);});
@@ -100,7 +102,9 @@ try {
   await page.getByRole('button',{name:'Toggle video loop'}).click();
   assert.equal(await page.locator('video').evaluate(v=>v.loop),false);
   results.push('A–B looping repeats the selected interval, rejects invalid endpoints, and whole-video looping clears correctly.');
-  await page.locator('video').evaluate(v=>{v.volume=.4;v.muted=false;});
+  await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1.25,wheelControls:false}}));
+  await page.waitForTimeout(150);
+  await page.locator('video').evaluate(v=>{v.volume=0;v.muted=true;});
   assert.equal(await page.getByRole('button',{name:'Raise volume ten percent'}).count(),0);
   const wheel = async modifiers => page.locator('video').evaluate((v,modifiers)=>{
     const before={speed:v.playbackRate,volume:v.volume};
@@ -109,31 +113,31 @@ try {
   },modifiers);
   assert.equal((await wheel({altKey:true})).prevented,false);
   await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1.25,wheelControls:true}}));
+  await page.locator('#movie_player').evaluate(p=>p.setPlaybackRate(1.25));
   await page.waitForFunction(() => document.querySelector('video').playbackRate===1.25);
   await page.waitForTimeout(100);
-  const speedWheel=await wheel({altKey:true});assert.equal(speedWheel.speed,1.3);assert.equal(speedWheel.prevented,true);
+  const speedWheel=await wheel({altKey:true,shiftKey:true});assert.equal(speedWheel.speed,1.3);assert.equal(speedWheel.prevented,true);
   await page.waitForTimeout(100);
-  const volumeWheel=await wheel({altKey:true,shiftKey:true});assert(Math.abs(volumeWheel.volume-.45)<.001);
+  await page.locator('video').evaluate(v=>{v.volume=0;});
+  const volumeWheel=await wheel({altKey:true});assert(Math.abs(volumeWheel.volume-.05)<.001);
+  await page.locator('video').evaluate(v=>{v.volume=.05;v.muted=true;});
   const normalWheel=await wheel({});assert.equal(normalWheel.prevented,false);
   const ctrlWheel=await wheel({ctrlKey:true});assert.equal(ctrlWheel.prevented,false);assert.equal(ctrlWheel.speed,ctrlWheel.before.speed);
-  results.push('Opt-in Alt-wheel speed/volume work; regular and Ctrl-wheel remain available.');
+  results.push('Alt-wheel volume/Alt-Shift-wheel speed work with explicit opt-out; regular and Ctrl-wheel remain available.');
   await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1.5,applySpeed:false}}));
-  await page.locator('video').evaluate(v=>{v.playbackRate=1;});
-  await page.waitForTimeout(700);
-  assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),1);
-  await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1.5,applySpeed:true}}));
-  await page.waitForFunction(()=>document.querySelector('video').playbackRate===1.5);
+  await page.reload();await page.waitForSelector('#smarttube-player-entry');
+  await page.waitForFunction(()=>document.querySelector('video').playbackRate===1);
   await page.evaluate(()=>{
     const video=document.querySelector('video');globalThis.startupCorrections=0;
-    video.addEventListener('ratechange',()=>{if(video.playbackRate===1.5)globalThis.startupCorrections++;});
-    globalThis.competingTimer=setInterval(()=>{video.playbackRate=1;},100);
+    video.addEventListener('ratechange',()=>{if(video.playbackRate===1)globalThis.startupCorrections++;});
+    globalThis.competingTimer=setInterval(()=>{video.playbackRate=2;},100);
   });
-  await page.getByText('Another speed control is overriding the saved speed',{exact:true}).waitFor();
+  await page.getByText('Native speed unavailable or another speed control is overriding normal startup',{exact:true}).waitFor({state:'attached'});
   await page.evaluate(()=>clearInterval(globalThis.competingTimer));
   await page.waitForTimeout(700);
-  assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),1);
+  assert.equal(await page.locator('video').evaluate(v=>v.playbackRate),2);
   assert((await page.evaluate(()=>globalThis.startupCorrections))<=4);
-  results.push('Startup correction can be disabled and stops with feedback under continuous competing resets.');
+  results.push('Fixed normal startup supersedes legacy opt-out and stops with feedback under continuous competing resets.');
   await worker.evaluate(() => chrome.storage.local.set({settings:{speed:1,wheelControls:false}}));
   await page.evaluate(() => {
     const player=document.querySelector('#movie_player');
@@ -155,6 +159,7 @@ try {
   results.push('Native playback remains usable; extension tools add no transport and isolate their pointer events.');
   await worker.evaluate(async () => chrome.storage.local.set({settings:{enabled:true,sponsorEnabled:true,categories:['sponsor'],speed:1.5,toolbar:true,autoQueue:false}}));
   await page.getByText('1 sponsor segment ready',{exact:true}).waitFor();
+  await page.locator('#movie_player').evaluate(p=>p.setPlaybackRate(1.5));
   assert.equal(await page.locator('video').evaluate(v => v.playbackRate),1.5);
   await page.locator('video').evaluate(async video => {video.currentTime=12; await video.play();});
   await page.waitForFunction(() => document.querySelector('video').currentTime >= 20);
@@ -364,6 +369,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('video').style.filter.includes('brightness(110%)'));
   await context.close();
   context = await chromium.launchPersistentContext(profile,launchOptions);
+  await context.addInitScript(installNativeVolumeFixture);
   const restartedWorker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
   const restarted = await restartedWorker.evaluate(async () => chrome.storage.local.get(['settings','queue']));
   assert.equal(restarted.settings.sponsorEnabled,true);

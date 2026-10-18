@@ -1,6 +1,14 @@
 # Validation status
 
-## 0.4.4 local preview
+## Current 0.4.7 accepted runtime; release review pending — 18 October 2026
+
+Preferred quality passed separate non-author review and coordinator acceptance (two passes, one repair round), following accepted native startup controls and compact UI. The everyday-readiness audit passed coordinator non-author review (one pass, no repairs). Exact accepted runtime and ZIP identities, tested scenarios and historical failures are retained in [replacement readiness](ENHANCER_REPLACEMENT.md); [release notes](RELEASE_0.4.7.md) describe installation, updates and remaining distribution gates.
+
+Accepted evidence binds 46 units, 87 controlled fixture groups and ten signed-out live quality groups to the exact 0.4.7 source/package. The everyday audit adds one setup scenario, four actual-live scenarios and one mixed controlled-503/live-recovery scenario, including actual owned process restart and visible comments/related restoration. All owned launches were headless isolated Brave 155.0.8059.85, only SmartTube, with `--mute-audio`; all seven recorded playing events in each final quality/everyday run measured native 5/media .05. These are separate runs, not universal playback guarantees.
+
+Personal-profile/account/other-extension behavior, Chrome/Edge, actual ads/community services and all layouts remain unverified. Earlier failures and excluded harness runs are preserved; a recorded page error without captured originating URL prevents a zero-error claim. Public release review, publication and actual downloaded-asset acceptance remain pending. Historical pending statements below describe their dated checkpoints.
+
+## Historical 0.4.4 local preview
 
 The current [compact UI preview](PLAYER_UI.md) awaits non-author review. Its new silent isolated Brave fixture/live UI, playback, queue and coexistence evidence is recorded separately under the private `player-simplification` workflow item. Historical results below accept only their named sources; none substitutes for review or normal-profile acceptance of 0.4.4. Publication is deferred.
 

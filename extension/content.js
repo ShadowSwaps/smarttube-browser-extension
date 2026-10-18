@@ -1,4 +1,4 @@
-// Runs in YouTube's isolated world. Uses only the DOM and HTML media APIs.
+// Isolated controller; fixed local requests synchronize native player state.
 (async () => {
   if (globalThis.__smarttubeBrowserLoaded) return;
   globalThis.__smarttubeBrowserLoaded = true;
@@ -8,12 +8,36 @@
   let settings = sanitizeSettings();
   let savedEnabled = settings.enabled;
   let video = null, videoId = null, segments = [], generation = 0, status = 'Sponsor skipping is off';
-  let host = null, shadow = null, lastSource = '', nextPending = false, attemptedEnd = null;
+  let host = null, shadow = null, nextPending = false, attemptedEnd = null;
   let queueConfirmed = '', confirmingQueue = false;
   const queueMedia = createQueueMediaTracker(videoIdFromUrl(initialUrl));
-  let speedKey = '', speedStartup = null, manualSpeed = false;
+  let speedStartup = null, manualSpeed = false;
+  let volumeStartup = null, manualVolume = false;
+  let volumeRequest = 0;
+  let qualityRequest = 0, qualityStatus = '';
+  const combinedStatus = () => [status,qualityStatus].filter(Boolean).join(' · ');
+  function applyQuality() {
+    qualityStatus = '';
+    if (!video || location.pathname !== '/watch' || !videoId) return;
+    const id = `quality-${++qualityRequest}`;
+    const receipt = event => {
+      if (event.target !== video || typeof event.detail !== 'string' || event.detail.length > 1024) return;
+      try {
+        const data = JSON.parse(event.detail);
+        if (data.version !== 1 || data.id !== id) return;
+        const labels = {off:'',manual:settings.enabled && settings.preferredQuality !== 'auto' ? 'Quality: native manual control' : '',waiting:'Quality: waiting for video',unsupported:'Quality control unavailable',unavailable:'Preferred quality unavailable',applying:'Quality: applying preference',confirmed:'Quality preference confirmed',unconfirmed:'Quality preference not confirmed',releasing:'Quality: releasing SmartTube selection','release-failed':'Quality release not confirmed · use native Quality controls'};
+        qualityStatus = labels[data.result] ?? 'Quality control unavailable';
+      } catch { /* Page-visible receipts are untrusted. */ }
+    };
+    video.addEventListener('smarttube-quality-receipt-v1',receipt);
+    video.dispatchEvent(new CustomEvent('smarttube-quality-request-v1',{detail:JSON.stringify({version:1,id,videoId,preference:settings.enabled ? settings.preferredQuality : 'auto'})}));
+    video.removeEventListener('smarttube-quality-receipt-v1',receipt);
+    const label = shadow?.querySelector('[data-quality-status]');
+    if (label) label.textContent = qualityStatus;
+  }
   let loopStart = null, loopEnd = null, loopEnabled = false, loopVideo = null, originalLoop = false;
   let lastWheel = 0;
+  let volumeNotice = null, volumeNoticeTimer = null;
   let lastSkip = null, undoUntil = 0, sessionDisabled = false;
   let cinemaOverride = null, panelOpen = false, entry = null;
   let pictureOverrides = {};
@@ -32,6 +56,7 @@
     if (!shadow) return;
     host.hidden = !settings.enabled || !settings.toolbar || !videoId;
     shadow.querySelector('[data-status]').textContent = status;
+    shadow.querySelector('[data-quality-status]').textContent = qualityStatus;
     entry.hidden = host.hidden;
     entry.title = `SmartTube · ${status}${lastSkip ? ' · Undo skip available' : ''}`;
     entry.textContent = lastSkip ? 'ST·' : 'ST';
@@ -125,12 +150,17 @@
     else if (name === 'seek' && Number.isFinite(value)) video.currentTime = Math.max(0,Math.min(Number.isFinite(video.duration) ? video.duration : Infinity,video.currentTime + Math.max(-60,Math.min(60,value))));
     else if (name === 'speed' && Number.isFinite(value)) {
       manualSpeed = true; speedStartup = null;
-      video.playbackRate = Math.round(Math.min(3,Math.max(.25,value))*100)/100;
+      const result = setPlayerSpeed(value);
+      if (!result.ok) { notice('Native speed control unavailable · use YouTube playback speed'); return {ok:false,error:'Native speed control unavailable'}; }
+      showSpeedNotice(result.limited);
     }
-    else if (name === 'volume' && Number.isFinite(value)) { video.volume = Math.max(0,Math.min(1,value)); if (value > 0) video.muted = false; }
+    else if (name === 'volume' && Number.isFinite(value)) {
+      releaseVolume();
+      if (!setPlayerVolume(value,true)) { notice('Native volume control unavailable · use YouTube volume'); return {ok:false,error:'Native volume control unavailable'}; }
+    }
     else if (name === 'volume-down') action('volume',video.volume-.1);
     else if (name === 'volume-up') action('volume',video.volume+.1);
-    else if (name === 'mute') video.muted = !video.muted;
+    else if (name === 'mute') { releaseVolume(); video.muted = !video.muted; }
     else if (name === 'cinema') { cinemaOverride = !cinemaEnabled(); sync(); }
     else if (name === 'loop') {
       if (!Number.isFinite(video.duration) || video.closest('.ytp-live') || isAd()) return {ok:false,error:'Looping is available on regular videos.'};
@@ -179,7 +209,7 @@
         :host([hidden]),[hidden]{display:none!important}.bar{box-sizing:border-box;max-height:var(--panel-height,240px);overflow:auto;padding:12px;background:#181818f5;border:1px solid #555;border-radius:10px;box-shadow:0 4px 18px #0005}
         .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0} .heading{display:flex;justify-content:space-between;align-items:center}:host([data-fallback]) .heading{padding-right:40px}details{border-top:1px solid #444;margin-top:10px;padding-top:10px}summary{cursor:pointer;padding:4px 0}label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}input[type=range]{width:120px;max-width:50%;accent-color:#ddd}
         button{border:0;border-radius:5px;color:inherit;background:#333;min-height:32px;padding:5px 9px;cursor:pointer;font:inherit}button:hover{background:#484848}button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #7be0c7;outline-offset:2px}button[aria-pressed=true]{background:#426052}.status{display:block;margin-top:10px;overflow-wrap:anywhere;color:#ccc}
-        </style><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube player tools" hidden><div class="heading"><strong>SmartTube</strong><button data-close aria-label="Close SmartTube tools">×</button></div><div class="row"><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button></div><button data-action="undo" hidden>Undo skip</button><details><summary>Loop video / A–B</summary><div class="row"><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button></div></details><details data-picture><summary>Picture and distractions</summary></details><span class="status" role="status" data-status></span></div>`;
+        </style><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube player tools" hidden><div class="heading"><strong>SmartTube</strong><button data-close aria-label="Close SmartTube tools">×</button></div><div class="row"><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button></div><button data-action="undo" hidden>Undo skip</button><details><summary>Loop video / A–B</summary><div class="row"><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button></div></details><details data-picture><summary>Picture and distractions</summary></details><span class="status" role="status" data-status></span><span class="status" aria-live="polite" data-quality-status></span></div>`;
       const picture = shadow.querySelector('[data-picture]');
       picture.insertAdjacentHTML('beforeend','<p>For this tab. Save defaults in extension Settings.</p>');
       const toggles = {filtersEnabled:'Enable video filters',hideComments:'Hide comments',hideRelated:'Hide related videos',hideChat:'Hide live chat',hideShorts:'Hide Shorts shelves',hideEndCards:'Hide end screens',hideInfoCards:'Hide info cards'};
@@ -267,39 +297,126 @@
   function onQueueLoad() { queueMedia.loading(isAd() ? null : videoIdFromUrl(location.href),video); queueConfirmed = ''; }
   function onMetadata() { queueMedia.metadata(isAd() ? null : videoIdFromUrl(location.href),video); sync(); }
   function applySpeed() {
-    if (!playable() || !settings.applySpeed || isAd() || manualSpeed || video.readyState < 1) return;
+    if (!playable() || isAd() || manualSpeed || video.readyState < 1) return;
     if (!speedStartup) return;
     if (!speedStartup.until) speedStartup.until = Date.now()+4000;
     if (Date.now() > speedStartup.until) { speedStartup = null; return; }
-    if (Math.abs(video.playbackRate-settings.speed) > .001) {
-      if (speedStartup.corrections >= 4) { speedStartup = null; notice('Another speed control is overriding the saved speed'); return; }
-      speedStartup.corrections++;
-      video.playbackRate = settings.speed;
-    }
+    if (speedStartup.syncedVideo === video && Math.abs(video.playbackRate-speedStartup.rate) < .001) return;
+    if (speedStartup.corrections >= 4) { speedStartup = null; notice('Native speed unavailable or another speed control is overriding normal startup'); return; }
+    speedStartup.corrections++;
+    const result = setPlayerSpeed(1);
+    if (result.ok) { speedStartup.syncedVideo = video; speedStartup.rate = result.rate; if (result.limited) notice(`YouTube speed limit · applied ${result.rate.toFixed(2)}×`); }
+    else notice('Native speed control unavailable · normal starting speed not applied');
   }
   function resetSpeed() { speedStartup = {until:0,corrections:0}; manualSpeed = false; }
+  function setPlayerSpeed(value) {
+    const media = video, rate = Math.round(Math.min(3,Math.max(.25,value))*100)/100;
+    const id = `${Date.now()}:${++volumeRequest}`;
+    let result = {ok:false};
+    const receipt = event => {
+      if (event.target !== media || typeof event.detail !== 'string' || event.detail.length > 256) return;
+      try {
+        const reply = JSON.parse(event.detail);
+        if (reply.version === 1 && reply.id === id && reply.ok === true && typeof reply.rate === 'number' && Number.isFinite(reply.rate) && reply.rate >= .25 && reply.rate <= 3 && typeof reply.limited === 'boolean') result = {ok:true,rate:reply.rate,limited:reply.limited};
+      } catch { /* Untrusted page data. */ }
+    };
+    media.addEventListener('smarttube-speed-receipt-v1',receipt);
+    try { media.dispatchEvent(new CustomEvent('smarttube-speed-request-v1',{bubbles:true,detail:JSON.stringify({version:1,id,rate,videoId,source:media.currentSrc})})); }
+    finally { media.removeEventListener('smarttube-speed-receipt-v1',receipt); }
+    return media === video && result.ok && Math.abs(media.playbackRate-result.rate) < .001 ? result : {ok:false};
+  }
+  function releaseVolume() { manualVolume = true; volumeStartup = null; }
+  function nativeVolumeMatches(percent) {
+    const panel = video?.closest('#movie_player,#shorts-player,.html5-video-player')?.querySelector('.ytp-volume-panel[aria-valuenow]');
+    return Math.abs(video.volume*100-percent) < .1 && (!panel || Math.abs(Number(panel.getAttribute('aria-valuenow'))-percent) < .1);
+  }
+  function setPlayerVolume(value,unmute) {
+    const media = video, percent = Math.round(Math.max(0,Math.min(1,value))*100);
+    const id = `${Date.now()}:${++volumeRequest}`;
+    let ok = false;
+    const receipt = event => {
+      if (event.target !== media || typeof event.detail !== 'string' || event.detail.length > 256) return;
+      try { const result = JSON.parse(event.detail); if (result.version === 1 && result.id === id && result.ok === true) ok = true; } catch { /* Untrusted page data. */ }
+    };
+    media.addEventListener('smarttube-volume-receipt-v1',receipt);
+    try {
+      media.dispatchEvent(new CustomEvent('smarttube-volume-request-v1',{bubbles:true,detail:JSON.stringify({version:1,id,percent,unmute,videoId,source:media.currentSrc})}));
+    } finally { media.removeEventListener('smarttube-volume-receipt-v1',receipt); }
+    // A forged receipt cannot authorize extension work or conceal a different
+    // measured volume. No reply data enters storage, messaging or navigation.
+    return ok && media === video && nativeVolumeMatches(percent);
+  }
+  function hideVolumeNotice() { clearTimeout(volumeNoticeTimer); if (volumeNotice) volumeNotice.hidden = true; }
+  function positionVolumeNotice(player) {
+    if (!player || !volumeNotice || volumeNotice.hidden) return;
+    const rect = player.getBoundingClientRect(), box = volumeNotice.getBoundingClientRect();
+    const left = Math.max(0,rect.left), right = Math.min(innerWidth,rect.right);
+    const center = (left+right)/2;
+    let top = Math.max(0,rect.top);
+    const fullscreen = document.fullscreenElement;
+    if (!fullscreen || (!fullscreen.contains(player) && !player.contains(fullscreen))) {
+      for (const header of document.querySelectorAll('#masthead-container,ytd-masthead')) {
+        const h = header.getBoundingClientRect();
+        if (h.width && h.height && h.left <= center && h.right >= center && h.top <= top && h.bottom > top) top = h.bottom;
+      }
+    }
+    const bottom = Math.min(innerHeight,rect.bottom);
+    const padding = Math.max(0,Math.min(12,(bottom-top-box.height)/2));
+    const x = Math.max(left+box.width/2,Math.min(right-box.width/2,center));
+    volumeNotice.style.setProperty('--volume-left',`${x-rect.left}px`);
+    volumeNotice.style.setProperty('--volume-top',`${top+padding-rect.top}px`);
+  }
+  function showVolumeNotice() { showPlayerNotice(`Volume ${Math.round(video.volume*100)}%`); }
+  function showSpeedNotice(limited) { showPlayerNotice(`Speed ${video.playbackRate.toFixed(2)}×${limited ? ' · YouTube limit' : ''}`); }
+  function showPlayerNotice(text) {
+    const player = video?.closest('#movie_player,#shorts-player,.html5-video-player');
+    if (!player) return;
+    if (!volumeNotice) {
+      volumeNotice = document.createElement('div'); volumeNotice.id = 'smarttube-volume-notice';
+      volumeNotice.attachShadow({mode:'open'}).innerHTML = `<style>:host{position:absolute;top:var(--volume-top,18px);left:var(--volume-left,50%);transform:translateX(-50%);z-index:65;pointer-events:none}:host([hidden]){display:none}span{display:block;color:#fff;background:#181818ed;border:1px solid #666;border-radius:8px;padding:8px 14px;font:600 15px/1.4 system-ui,sans-serif;white-space:nowrap}</style><span role="status" aria-live="polite" aria-atomic="true"></span>`;
+    }
+    if (volumeNotice.parentElement !== player) player.append(volumeNotice);
+    volumeNotice.shadowRoot.querySelector('span').textContent = text;
+    clearTimeout(volumeNoticeTimer); volumeNotice.hidden = false;
+    positionVolumeNotice(player);
+    volumeNoticeTimer = setTimeout(hideVolumeNotice,1200);
+  }
+  function resetVolume() { manualVolume = false; volumeStartup = {until:0,corrections:0}; }
+  function applyVolume() {
+    if (!playable() || !settings.applyVolume || manualVolume || !volumeStartup) return;
+    if (!volumeStartup.until) volumeStartup.until = Date.now()+4000;
+    if (Date.now() > volumeStartup.until) { volumeStartup = null; return; }
+    const target = settings.startupVolume / 100;
+    if (volumeStartup.syncedVideo === video && nativeVolumeMatches(settings.startupVolume)) return;
+    if (volumeStartup.corrections >= 4) { const unavailable = volumeStartup.unavailable; volumeStartup = null; notice(unavailable ? 'Native volume control unavailable · starting volume not applied' : 'Another volume control is overriding the starting volume'); return; }
+    // Count attempts even when a site API throws after a partial mutation.
+    // A missing/false receipt must never allow more than four corrections.
+    volumeStartup.corrections++;
+    volumeStartup.unavailable = !setPlayerVolume(target,target > 0);
+    if (!volumeStartup.unavailable) volumeStartup.syncedVideo = video;
+    else notice('Native volume control unavailable · starting volume not applied');
+  }
   function sync() {
     const nextId = videoIdFromUrl(location.href);
     const found = nextId ? [...document.querySelectorAll('video')].find(item => item.offsetWidth > 0 && !item.ended) || document.querySelector('video') : null;
     queueMedia.observe(found?.closest('.ad-showing,.ad-interrupting') ? null : nextId,found);
-    if (nextId !== videoId) { clearLoop(); videoId = nextId; nextPending = false; attemptedEnd = null; queueConfirmed = ''; speedKey = ''; resetSpeed(); loadSegments(); send({type:'QUEUE_CONTEXT',videoId}); }
+    if (nextId !== videoId) { clearLoop(); hideVolumeNotice(); videoId = nextId; nextPending = false; attemptedEnd = null; queueConfirmed = ''; resetSpeed(); resetVolume(); loadSegments(); send({type:'QUEUE_CONTEXT',videoId}); }
     if (found !== video) {
       if (video) { video.removeEventListener('timeupdate',tick); video.removeEventListener('ended',onEnded); video.removeEventListener('loadedmetadata',onMetadata); video.removeEventListener('loadstart',onQueueLoad); video.removeEventListener('emptied',onQueueLoad); }
-      clearLoop(); video = found; speedKey = ''; resetSpeed();
+      clearLoop(); video = found;
       if (video) { video.addEventListener('timeupdate',tick); video.addEventListener('ended',onEnded); video.addEventListener('loadedmetadata',onMetadata); video.addEventListener('loadstart',onQueueLoad); video.addEventListener('emptied',onQueueLoad); }
     }
     if (video) {
-      if (video.currentSrc !== lastSource) { lastSource = video.currentSrc; }
-      const key = `${videoId}:${lastSource}`;
-      if (key !== speedKey) { speedKey = key; resetSpeed(); }
-      mount(); applySpeed(); tick(); confirmQueue();
+      applyVolume(); applyQuality(); mount(); applySpeed(); tick(); confirmQueue();
       if (!nextPending && !video.paused && !video.ended && video.currentTime < video.duration-1) attemptedEnd = null;
     } else if (host) {setPanel(false,false);host.hidden = true;entry.hidden = true;playerSize.disconnect();playerVisibility.disconnect();observedPlayer=null;}
     appearance.update({video:videoId ? video : null,settings:{...settings,...pictureOverrides},cinemaEnabled:cinemaEnabled()});
+    if (!playable()) hideVolumeNotice();
+    else if (volumeNotice && !volumeNotice.hidden) positionVolumeNotice(video.closest('#movie_player,#shorts-player,.html5-video-player'));
   }
   chrome.runtime.onMessage.addListener((message,sender,respond) => {
     if (sender.id !== chrome.runtime.id) return;
-    if (message.type === 'PLAYER_STATUS') respond({ok:true,videoId,title:videoId ? title() : '',paused:video?.paused ?? true,position:video?.currentTime || 0,duration:Number.isFinite(video?.duration) ? video.duration : 0,speed:video?.playbackRate || settings.speed,volume:video?.volume ?? 1,muted:video?.muted ?? false,loopEnabled,loopStart,loopEnd,cinema:cinemaEnabled(),status});
+    if (message.type === 'PLAYER_STATUS') respond({ok:true,videoId,title:videoId ? title() : '',paused:video?.paused ?? true,position:video?.currentTime || 0,duration:Number.isFinite(video?.duration) ? video.duration : 0,speed:video?.playbackRate || 1,volume:video?.volume ?? 1,muted:video?.muted ?? false,loopEnabled,loopStart,loopEnd,cinema:cinemaEnabled(),status:combinedStatus(),qualityStatus});
     if (message.type === 'CONTROL') respond(action(message.action,message.value));
   });
   chrome.storage.onChanged.addListener((changes,area) => {
@@ -310,7 +427,8 @@
     savedEnabled = settings.enabled;
     if (sessionDisabled) settings.enabled = false;
     if (!settings.enabled) clearLoop();
-    if (settings.speed !== old.speed || settings.applySpeed !== old.applySpeed || settings.enabled !== old.enabled) resetSpeed();
+    if (settings.enabled !== old.enabled) resetSpeed();
+    if (settings.startupVolume !== old.startupVolume || settings.applyVolume !== old.applyVolume || settings.enabled !== old.enabled) resetVolume();
     if (settings.cinema !== old.cinema) cinemaOverride = null;
     if (settings.enabled !== old.enabled || settings.sponsorEnabled !== old.sponsorEnabled || settings.categories.join(',') !== old.categories.join(',')) loadSegments();
     sync();
@@ -320,15 +438,18 @@
     if (element?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(element?.tagName || '')) return;
     if (event.altKey && event.shiftKey && event.code === 'KeyS') {
       sessionDisabled = !sessionDisabled; settings.enabled = !sessionDisabled && savedEnabled;
+      if (!sessionDisabled) resetVolume();
       generation++; segments = []; if (sessionDisabled) clearLoop(); sync(); if (!sessionDisabled) loadSegments();
       event.preventDefault();
     }
     if (event.isTrusted && event.shiftKey && ['Comma','Period'].includes(event.code)) { manualSpeed = true; speedStartup = null; }
+    if (event.isTrusted && !event.altKey && !event.ctrlKey && !event.metaKey && ['ArrowUp','ArrowDown','KeyM'].includes(event.code)) releaseVolume();
   });
   // Native speed menus and other controllers' deliberate user input win over
   // the short startup reconciliation window. No ratechange enforcement loop.
   document.addEventListener('pointerdown',event => {
     if (event.isTrusted && event.target.closest?.('.ytp-settings-button,.ytp-settings-menu,#efyt-speed,#efyt-speed-minus,#efyt-speed-plus')) { manualSpeed = true; speedStartup = null; }
+    if (event.isTrusted && event.target.closest?.('.ytp-mute-button,.ytp-volume-area,.ytp-volume-panel,.ytp-volume-slider')) releaseVolume();
   },true);
   document.addEventListener('wheel',event => {
     const target = event.composedPath()[0];
@@ -338,8 +459,8 @@
     event.preventDefault(); event.stopImmediatePropagation();
     if (Date.now()-lastWheel < 60) return;
     lastWheel = Date.now(); const step = event.deltaY < 0 ? 1 : -1;
-    if (event.shiftKey) action('volume',video.volume+step*.05);
-    else action('speed',video.playbackRate+step*.05);
+    if (event.shiftKey) action('speed',video.playbackRate+step*.05);
+    else { if (action('volume',video.volume+step*.05).ok) showVolumeNotice(); }
   },{capture:true,passive:false});
   const state = await send({type:'GET_STATE'});
   if (state.ok) { settings = sanitizeSettings(state.settings); savedEnabled = settings.enabled; }

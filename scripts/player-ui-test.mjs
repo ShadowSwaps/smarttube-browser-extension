@@ -5,6 +5,7 @@ import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {installNativeVolumeFixture} from './fixtures/native-volume.mjs';
 const modulePath=process.env.BROWSER_TEST_PLAYWRIGHT_MODULE || 'playwright';
 const {chromium}=await import(path.isAbsolute(modulePath)?pathToFileURL(modulePath).href:modulePath);
 const live=process.argv.includes('--live'), stamp=Date.now();
@@ -18,6 +19,7 @@ const context=await chromium.launchPersistentContext(path.resolve(`.local/player
 report.browser=context.browser().version();let page;
 const check=async(name,fn)=>{await fn();report.checks.push(name);};
 try {
+ if(!live)await context.addInitScript(installNativeVolumeFixture);
  if(!live)await context.route('https://www.youtube.com/**',route=>route.fulfill({contentType:'text/html',body:`<!doctype html><title>UI fixture - YouTube</title><style>body{margin:20px;background:#111;color:white}#movie_player{position:relative;width:min(880px,100%);aspect-ratio:16/9;background:#333}video{width:100%;height:100%}.ytp-chrome-bottom{position:absolute;bottom:0;left:12px;right:12px;height:60px}.ytp-right-controls{display:flex;justify-content:flex-end;height:40px;margin-top:20px}.ytp-autohide .ytp-chrome-bottom{opacity:0;pointer-events:none}.caption-window{position:absolute;bottom:80px;left:20px}</style><input aria-label="Site input"><div id="movie_player" class="html5-video-player" tabindex="0"><video></video><div class="ytp-caption-window-container"></div><div class="ytp-chrome-bottom"><div class="ytp-right-controls"><button class="ytp-settings-button">Native settings</button><button class="ytp-fullscreen-button" onclick="document.fullscreenElement?document.exitFullscreen():document.querySelector('#movie_player').requestFullscreen()">Native fullscreen</button></div></div></div>`}));
  const worker=context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
  const id=await worker.evaluate(()=>chrome.runtime.id);

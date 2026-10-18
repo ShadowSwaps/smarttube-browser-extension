@@ -1,6 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.4.7 preview — prepared 18 October 2026; release review pending
+
+- Add local preferred quality: Auto by default, Highest available, or a fixed resolution falling back to the highest offered at or below the target.
+- Confirm native reported quality and decoded height; bound selection to eight seconds/four calls and yield to current-video native Settings interactions. No new permissions, service or media reload forcing.
+- See [behavior and verification limits](docs/PREFERRED_QUALITY.md). Preferred-quality separate review and coordinator acceptance passed (two passes, one repair round); everyday-readiness coordinator review passed (one pass, no repairs). Public release/source/package review and distribution verification remain pending.
+
+- Includes the accepted native Normal 1× startup, verified starting volume (default 5%), native wheel feedback and compact tools described below. See [0.4.7 distribution instructions and coverage](docs/RELEASE_0.4.7.md).
+
+## Historical local preview checkpoints
+
+The entries below retain their original pending statements. The native startup/UI/quality work and selected isolated everyday workflows were subsequently accepted on 18 October 2026; personal-profile acceptance remains unverified for 0.4.7.
+
+### 0.4.6 local preview — historical review submission
+
+- Start each new/reloaded video at native 1×, leaving later manual speed choices in control. Retire editable saved startup speed controls without deleting legacy stored values.
+- Synchronize SmartTube speed changes with native player state/menu and show the achieved speed in the readable transient player notice. Respect native supported limits; retain0.05× steps within them.
+- Apply starting volume(default5%) then deliberately unmute the YouTube player only after verified volume integration; failure attempts remain bounded, and browser/system mute is untouched.
+- Separate native-integration review and coordinator verification remain required. New-candidate normal-profile acceptance and publication are pending.
+
+### 0.4.5 local preview — reviewed locally; subsequent behavior changes pending
+
+- Added enabled-by-default 5% starting volume, a saved percentage and an ownership opt-out. Startup correction is bounded and yields to deliberate native volume/mute gestures without unmuting.
+- Enabled wheel actions by default, changed Alt-wheel to volume and Alt-Shift-wheel to speed as selected by the human, and added a brief volume percentage indicator. Explicit saved opt-outs remain respected.
+- Repaired reviewed native-state mismatch through a narrow local MAIN-world volume adapter, preserving mute and using no new permission. Failed API attempts count toward the bounded startup budget; a separate non-author review remains required.
+- Added focused native-media startup/restart and real wheel-input checks. See [behavior and limits](docs/STARTUP_VOLUME.md). Required non-author review and normal-profile installation remain pending; no publication.
 
 ### 0.4.4 local preview — review pending
 

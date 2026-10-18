@@ -63,6 +63,20 @@ test('settings are opt-in and recover from corrupt storage',() => {
   assert.equal(sanitizeSettings({speed:500}).speed,3);
   assert.equal(sanitizeSettings(null).speed,1);
 });
+test('startup volume defaults safely for old settings and rejects corrupt values',()=>{
+  const old = sanitizeSettings({speed:1.5,wheelControls:true});
+  assert.equal(old.startupVolume,5);assert.equal(old.applyVolume,true);
+  assert.equal(sanitizeSettings().wheelControls,true);
+  assert.equal(sanitizeSettings({wheelControls:false}).wheelControls,false);
+  assert.equal(old.speed,1.5);assert.equal(old.wheelControls,true);
+  for (const value of [null,NaN,Infinity,'80',{}]) assert.equal(sanitizeSettings({startupVolume:value}).startupVolume,5);
+  assert.equal(sanitizeSettings({startupVolume:-5}).startupVolume,0);
+  assert.equal(sanitizeSettings({startupVolume:150}).startupVolume,100);
+  assert.equal(sanitizeSettings({startupVolume:4.6,applyVolume:false}).startupVolume,5);
+  assert.equal(sanitizeSettings({applyVolume:false}).applyVolume,false);
+  assert.equal(sanitizeSettings({applyVolume:'false'}).applyVolume,true);
+});
+
 test('appearance defaults are neutral and invalid filter values cannot become CSS',()=>{
   const old = sanitizeSettings({speed:1.5});
   assert.equal(old.speed,1.5);assert.equal(old.cinema,false);assert.equal(old.hideComments,false);assert.equal(old.filtersEnabled,false);

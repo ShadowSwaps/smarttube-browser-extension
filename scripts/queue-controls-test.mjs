@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {installNativeVolumeFixture} from './fixtures/native-volume.mjs';
 import {createHash} from 'node:crypto';
 const modulePath=process.env.BROWSER_TEST_PLAYWRIGHT_MODULE || 'playwright';
 const {chromium}=await import(path.isAbsolute(modulePath)?pathToFileURL(modulePath).href:modulePath);
@@ -22,6 +23,7 @@ const media=Buffer.alloc(44+4*8000*2);
 media.write('RIFF');media.writeUInt32LE(media.length-8,4);media.write('WAVEfmt ',8);media.writeUInt32LE(16,16);media.writeUInt16LE(1,20);media.writeUInt16LE(1,22);media.writeUInt32LE(8000,24);media.writeUInt32LE(16000,28);media.writeUInt16LE(2,32);media.writeUInt16LE(16,34);media.write('data',36);media.writeUInt32LE(media.length-44,40);
 async function launchBrowser() {
  context=await chromium.launchPersistentContext(profile,launch);
+ if(!live)await context.addInitScript(installNativeVolumeFixture);
  report.browserVersion=context.browser().version();
  if(!live) await context.route('https://www.youtube.com/**',async route=>{
   const url=new URL(route.request().url());

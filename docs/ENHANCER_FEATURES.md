@@ -1,5 +1,11 @@
 # Enhancer feature reconstruction and playback work
 
+## Current replacement status (18 October 2026)
+
+The accepted runtime baseline is **0.4.7**. [Preferred quality](PREFERRED_QUALITY.md) passed separate non-author review and coordinator acceptance. Native YouTube Theater satisfies the other confirmed essential workflow. The current [everyday-readiness audit](ENHANCER_REPLACEMENT.md) adds actual queue continuation/restart recovery and visible comments/related hide/restore; coordinator non-author review accepted that audit (one pass, no repairs). Public release review remains separate and pending; see [release notes](RELEASE_0.4.7.md). Overall replacement is partially verified; personal-profile compatibility remains optional/deferred unverified. Enhancer disable/removal is not authorized.
+
+Current startup behavior deliberately uses native **Normal 1×** for every new/reloaded video, preserves manual speed for the current video, and defaults to verified native/media **5%** with deliberate positive unmute. Alt-wheel controls volume; Alt-Shift-wheel controls speed. See [startup volume](STARTUP_VOLUME.md). The 0.2.0 requirements, saved-speed UI descriptions, package and review statements below are historical evidence, superseded where these later choices differ; they are not current pending acceptance gates or a request to restore saved startup speed.
+
 ## Selected scope and reference
 
 The user requested the reload speed fix and incorporation of useful Enhancer features, then selected playback controls: loop ranges, volume and mouse-wheel controls. This increment implements those workflows in SmartTube Browser 0.2.0. Remaining feature groups stay visible below; this is not a claim of complete Enhancer parity.
@@ -35,12 +41,12 @@ These groups come from public documentation. The selected appearance increment i
 
 | Feature group | Status / next constraint |
 | --- | --- |
-| Default speed, loop ranges, native volume, wheel control | Selected increment implemented; improvements and limits above |
+| Startup speed, loop ranges, native volume, wheel control | Current 0.4.7 uses fixed Normal 1× startup and verified 5% volume; see current status above. Historical selected increment below remains preserved. |
 | Volume/bass amplification | Deferred; investigate codec/audio-graph compatibility before adding gain |
-| Preferred quality, frame-rate/codec selection | Deferred; requires supported player capability discovery and fallback |
+| Preferred quality, frame-rate/codec selection | Preferred quality is accepted in 0.4.7 with Auto, Highest available and fixed targets with at-or-below fallback; native manual precedence and bounded attempts are verified. Frame-rate/codec forcing remains unselected backlog. |
 | Background autoplay / stop behaviour | Deferred; define interaction with queue and browser policies |
 | Mini player / pop-up player | Deferred; compare native picture-in-picture and embedded playback boundaries |
-| Cinema mode / wider player | Cinema dimming implemented in 0.3.0; player resizing remains deferred |
+| Cinema mode / wider player | Cinema dimming implemented; native Theater enlargement was verified standalone and accepted by the human as sufficient. Custom resizing remains optional. |
 | Hide comments, related videos, chat, Shorts, end cards | Six reversible switches implemented in 0.3.0, including info cards; selector coverage is bounded |
 | Video filters / themes | Four original video filters implemented in 0.3.0; themes remain deferred, no copied assets |
 | Screenshots | Deferred; validate canvas/media-origin restrictions and output |

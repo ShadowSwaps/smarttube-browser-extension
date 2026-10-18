@@ -7,10 +7,11 @@ const filterDrafts = new Set();
 const send = message => chrome.runtime.sendMessage(message);
 function feedback(text) { $('#feedback').textContent = text; }
 function render() {
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applyVolume','wheelControls',...APPEARANCE_BOOLEANS]) {
     const input = $(`#${key}`); if (input) input.checked = state.settings[key];
   }
-  if ($('#speed')) $('#speed').value = String(state.settings.speed);
+  if ($('#startupVolume')) { $('#startupVolume').value = String(state.settings.startupVolume); $('#startupVolume').disabled = !state.settings.applyVolume; }
+  if ($('#preferredQuality')) $('#preferredQuality').value = state.settings.preferredQuality;
   for (const key of Object.keys(FILTER_LIMITS)) {
     if (!filterDrafts.has(key)) {
       $(`#${key}`).value = String(state.settings[key]);
@@ -22,7 +23,7 @@ function render() {
   if (!popup) return;
   $('#video-title').textContent = player?.videoId ? player.title : 'Open a video on YouTube';
   $('#player-time').textContent = player?.videoId ? `${formatTime(player.position)} / ${formatTime(player.duration)} · ${player.speed}×` : 'Your viewing tools are ready when you are.';
-  $('#sponsor-status').textContent = !state.settings.enabled ? 'Player enhancements are paused in settings.' : player?.status || '';
+  $('#sponsor-status').textContent = !state.settings.enabled ? ['Player enhancements are paused in settings.',player?.qualityStatus].filter(Boolean).join(' ') : player?.status || '';
   for (const button of document.querySelectorAll('[data-control],#add-current')) button.disabled = !player?.videoId || !state.settings.enabled;
   $('#loop').setAttribute('aria-pressed',String(player?.loopEnabled ?? false));
   $('#loop').textContent = player?.loopEnabled ? 'Loop on' : 'Loop';
@@ -111,10 +112,11 @@ async function init() {
   const result = await send({type:'GET_STATE'});
   if (!result.ok) throw new Error();
   state = result;
-  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applySpeed','wheelControls',...APPEARANCE_BOOLEANS]) {
+  for (const key of ['enabled','sponsorEnabled','toolbar','autoQueue','applyVolume','wheelControls',...APPEARANCE_BOOLEANS]) {
     $(`#${key}`)?.addEventListener('change',event => save({[key]:event.target.checked}));
   }
-  $('#speed')?.addEventListener('change',event => save({speed:Number(event.target.value)}));
+  $('#startupVolume')?.addEventListener('change',event => save({startupVolume:Number(event.target.value)}));
+  $('#preferredQuality')?.addEventListener('change',event => save({preferredQuality:event.target.value}));
   if (popup) {
     const [tab] = await chrome.tabs.query({active:true,currentWindow:true});
     // Sending only to the active tab avoids querying browsing history or all tabs.

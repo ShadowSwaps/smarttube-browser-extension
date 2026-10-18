@@ -7,7 +7,8 @@ export const APPEARANCE_BOOLEANS = Object.freeze(['cinema','filtersEnabled','hid
 export const FILTER_LIMITS = Object.freeze({filterBrightness:[50,150,100],filterContrast:[50,150,100],filterSaturation:[0,200,100],filterGrayscale:[0,100,0]});
 export const DEFAULT_SETTINGS = Object.freeze({
   enabled: true, sponsorEnabled: false, categories: ['sponsor'],
-  speed: 1, applySpeed: true, wheelControls: false, toolbar: true, autoQueue: false,
+  speed: 1, applySpeed: true, wheelControls: true, toolbar: true, autoQueue: false,
+  applyVolume: true, startupVolume: 5, preferredQuality: 'auto',
   cinema:false, filtersEnabled:false, hideComments:false, hideRelated:false,
   hideChat:false, hideShorts:false, hideEndCards:false, hideInfoCards:false,
   filterBrightness:100, filterContrast:100, filterSaturation:100, filterGrayscale:0
@@ -24,7 +25,7 @@ export function videoIdFromUrl(value) {
 }
 export function sanitizeSettings(raw = {}) {
   const value = { ...DEFAULT_SETTINGS };
-  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue', 'applySpeed', 'wheelControls', ...APPEARANCE_BOOLEANS]) {
+  for (const key of ['enabled', 'sponsorEnabled', 'toolbar', 'autoQueue', 'applySpeed', 'applyVolume', 'wheelControls', ...APPEARANCE_BOOLEANS]) {
     if (typeof raw?.[key] === 'boolean') value[key] = raw[key];
   }
   for (const [key,[min,max]] of Object.entries(FILTER_LIMITS)) {
@@ -33,9 +34,13 @@ export function sanitizeSettings(raw = {}) {
   if (typeof raw?.speed === 'number' && Number.isFinite(raw.speed)) {
     value.speed = Math.round(Math.min(3, Math.max(0.25, raw.speed)) * 100) / 100;
   }
+  if (typeof raw?.startupVolume === 'number' && Number.isFinite(raw.startupVolume)) {
+    value.startupVolume = Math.round(Math.min(100, Math.max(0, raw.startupVolume)));
+  }
   value.categories = Array.isArray(raw?.categories)
     ? [...new Set(raw.categories.filter(item => Object.hasOwn(CATEGORIES, item)))]
     : [...DEFAULT_SETTINGS.categories];
+  if (['auto','highest','144','240','360','480','720','1080','1440','2160','2880','4320'].includes(raw?.preferredQuality)) value.preferredQuality = raw.preferredQuality;
   return value;
 }
 export function videoFilterCss(settings) {
