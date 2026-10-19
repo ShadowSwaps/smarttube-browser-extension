@@ -1,10 +1,17 @@
 # Changelog
 
-## 0.4.7 preview — prepared 18 October 2026; release review pending
+## 0.4.8 preview — prepared 19 October 2026; release review pending
+
+- Keep one keyboard-reachable ST fallback when native chrome auto-hides, with Enter/Space, visible focus and natural Tab navigation.
+- Preserve focused tools while the entry moves; return keyboard Undo focus to Close when Undo disappears.
+- Reserve space beside the scrolling panel so the fallback cannot cover expanded controls in compact players.
+- Add keyboard/native-fullscreen fixture checks and exact-package signed-out Brave acceptance. Keyboard/layout coordinator non-author acceptance passed (one pass, no repairs). Release/source/package review and publication verification remain pending. Published 0.4.7 is unchanged; [coverage and limits](docs/VALIDATION.md) remain separate from review acceptance.
+
+## 0.4.7 preview — published and accepted 18 October 2026
 
 - Add local preferred quality: Auto by default, Highest available, or a fixed resolution falling back to the highest offered at or below the target.
 - Confirm native reported quality and decoded height; bound selection to eight seconds/four calls and yield to current-video native Settings interactions. No new permissions, service or media reload forcing.
-- See [behavior and verification limits](docs/PREFERRED_QUALITY.md). Preferred-quality separate review and coordinator acceptance passed (two passes, one repair round); everyday-readiness coordinator review passed (one pass, no repairs). Public release/source/package review and distribution verification remain pending.
+- See [behavior and verification limits](docs/PREFERRED_QUALITY.md). Preferred-quality separate review and coordinator acceptance passed (two passes, one repair round); everyday-readiness coordinator review passed (one pass, no repairs). Public release/source/package review and actual downloaded-distribution verification passed on 18 October 2026.
 
 - Includes the accepted native Normal 1× startup, verified starting volume (default 5%), native wheel feedback and compact tools described below. See [0.4.7 distribution instructions and coverage](docs/RELEASE_0.4.7.md).
 

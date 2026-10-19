@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SmartTube Browser",
-  "version": "0.4.7",
-  "version_name": "0.4.7 local preview",
+  "version": "0.4.8",
+  "version_name": "0.4.8 local preview",
   "description": "A calmer YouTube player: sponsor skipping, playback controls and a local queue. Free and open-source.",
   "minimum_chrome_version": "120",
   "icons": {"16":"icons/icon-16.png","32":"icons/icon-32.png","48":"icons/icon-48.png","128":"icons/icon-128.png"},

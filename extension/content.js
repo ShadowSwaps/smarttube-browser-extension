@@ -42,7 +42,6 @@
   let cinemaOverride = null, panelOpen = false, entry = null;
   let pictureOverrides = {};
   let observedPlayer = null;
-  let lastPlayerPointer = 0;
   const playerSize = new ResizeObserver(() => {if(video)mount();});
   const playerVisibility = new MutationObserver(() => {if(observedPlayer && entry)layoutEntry(observedPlayer);});
   const cinemaEnabled = () => settings.enabled && Boolean(videoId) && (cinemaOverride ?? settings.cinema);
@@ -73,6 +72,8 @@
     for (const name of ['loop','loop-a','loop-b']) shadow.querySelector(`[data-action="${name}"]`).disabled = !playable() || !Number.isFinite(video.duration) || isAd() || Boolean(video.closest('.ytp-live'));
     shadow.querySelector('[data-action="cinema"]').setAttribute('aria-pressed',String(cinemaEnabled()));
     const undo = shadow.querySelector('[data-action="undo"]');
+    // An Undo activation/expiry must not leave keyboard focus on a hidden button.
+    if (!lastSkip && shadow.activeElement === undo && panelOpen) shadow.querySelector('[data-close]').focus({preventScroll:true});
     undo.hidden = !lastSkip;
     if (host.hidden && panelOpen) setPanel(false,false);
   }
@@ -206,8 +207,9 @@
       shadow = host.attachShadow({mode:'open'});
       shadow.innerHTML = `<style>
         :host{position:absolute;right:12px;bottom:var(--tools-bottom,72px);z-index:60;font:12px/1.4 system-ui,sans-serif;color:#f4f6fa;width:300px;max-width:calc(100% - 24px)}
-        :host([hidden]),[hidden]{display:none!important}.bar{box-sizing:border-box;max-height:var(--panel-height,240px);overflow:auto;padding:12px;background:#181818f5;border:1px solid #555;border-radius:10px;box-shadow:0 4px 18px #0005}
-        .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0} .heading{display:flex;justify-content:space-between;align-items:center}:host([data-fallback]) .heading{padding-right:40px}details{border-top:1px solid #444;margin-top:10px;padding-top:10px}summary{cursor:pointer;padding:4px 0}label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}input[type=range]{width:120px;max-width:50%;accent-color:#ddd}
+        :host([data-fallback]){right:56px;max-width:calc(100% - 68px)}
+        :host([hidden]),[hidden]{display:none!important}.bar{box-sizing:border-box;max-height:var(--panel-height,240px);overflow:auto;overscroll-behavior:contain;scroll-padding:8px;padding:12px;background:#181818f5;border:1px solid #555;border-radius:10px;box-shadow:0 4px 18px #0005}
+        .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0} .heading{display:flex;justify-content:space-between;align-items:center}details{border-top:1px solid #444;margin-top:10px;padding-top:10px}summary{cursor:pointer;padding:4px 0}label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}input[type=range]{width:120px;max-width:50%;accent-color:#ddd}
         button{border:0;border-radius:5px;color:inherit;background:#333;min-height:32px;padding:5px 9px;cursor:pointer;font:inherit}button:hover{background:#484848}button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #7be0c7;outline-offset:2px}button[aria-pressed=true]{background:#426052}.status{display:block;margin-top:10px;overflow-wrap:anywhere;color:#ccc}
         </style><div id="smarttube-tools" class="bar" role="group" aria-label="SmartTube player tools" hidden><div class="heading"><strong>SmartTube</strong><button data-close aria-label="Close SmartTube tools">×</button></div><div class="row"><button data-action="queue" aria-label="Add this video to queue">+ Queue</button><button data-action="next" aria-label="Play next queued video">Next</button><button data-action="cinema" aria-label="Toggle cinema mode" aria-pressed="false">Cinema</button></div><button data-action="undo" hidden>Undo skip</button><details><summary>Loop video / A–B</summary><div class="row"><button data-action="loop" aria-label="Toggle video loop" aria-pressed="false">Loop</button><button data-action="loop-a" aria-label="Set loop start">A</button><button data-action="loop-b" aria-label="Set loop end">B</button><button data-action="loop-clear" aria-label="Clear loop range">Clear</button></div></details><details data-picture><summary>Picture and distractions</summary></details><span class="status" role="status" data-status></span><span class="status" aria-live="polite" data-quality-status></span></div>`;
       const picture = shadow.querySelector('[data-picture]');
@@ -246,10 +248,6 @@
       for (const type of ['pointerdown','pointerup','mousedown','mouseup','dblclick','touchstart','touchend']) {shadow.addEventListener(type,event => event.stopPropagation());entry.addEventListener(type,event => event.stopPropagation());}
       document.addEventListener('pointerdown',event=>{if(panelOpen && !event.composedPath().includes(host) && !event.composedPath().includes(entry))setPanel(false,false);},true);
       document.addEventListener('focusin',event=>{if(panelOpen && !event.composedPath().includes(host) && !event.composedPath().includes(entry))setPanel(false,false);});
-      document.addEventListener('pointermove',event=>{
-        if (!observedPlayer?.contains(event.target)) return;
-        lastPlayerPointer=Date.now();layoutEntry(observedPlayer);
-      },{passive:true});
     }
     if (host.parentElement !== player) player.append(host);
     if (observedPlayer !== player) {
@@ -273,11 +271,16 @@
     const focused=document.activeElement===entry;
     const chrome=controls?.closest('.ytp-chrome-bottom');
     const chromeHidden=player.classList.contains('ytp-autohide') || (chrome && (getComputedStyle(chrome).visibility==='hidden' || Number(getComputedStyle(chrome).opacity)===0));
-    // Some coexisting controllers leave native chrome hidden even during
-    // pointer activity. Keep one reachable entry without forcing chrome on.
-    const needsAccess=focused || Date.now()-lastPlayerPointer<1500 || (entry.hasAttribute('data-fallback') && entry.matches(':hover'));
-    const target=native && !forceFallback && !(needsAccess && chromeHidden) ? controls : player;
-    if(entry.parentElement!==target){target.append(entry);if(focused)entry.focus({preventScroll:true});}
+    // Hidden chrome cannot provide a keyboard route. Keep the single small
+    // entry visible outside it, without forcing native controls to stay open.
+    const target=native && !forceFallback && !chromeHidden ? controls : player;
+    if(entry.parentElement!==target){
+      // Place the fallback before its panel without moving a focused shadow
+      // tree when native controls hide or reappear.
+      if(target===player && host.parentElement===player) player.insertBefore(entry,host);
+      else target.append(entry);
+      if(focused)entry.focus({preventScroll:true});
+    }
     entry.toggleAttribute('data-fallback',target===player);
     host.toggleAttribute('data-fallback',target===player);
     const hidden=target===controls && chromeHidden;

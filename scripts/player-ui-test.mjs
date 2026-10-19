@@ -74,12 +74,12 @@ try {
   assert.equal(await entry.getAttribute('aria-expanded'),'false');assert.equal(await page.locator('video').first().evaluate(v=>v.paused),before);
  });
  if(live){
-  await check('Live native controls auto-hide without an invisible ST tab stop; hover restores entry',async()=>{
+  await check('Live native controls auto-hide while the single ST fallback remains keyboard reachable',async()=>{
    await page.locator('video').first().evaluate(v=>v.play().catch(()=>{}));
    await page.locator('h1.ytd-watch-metadata').click();await page.mouse.move(5,850);
    await page.waitForFunction(()=>document.querySelector('#movie_player').classList.contains('ytp-autohide'),{},{timeout:15000});
-   await page.waitForFunction(()=>document.querySelector('#smarttube-player-entry').tabIndex===-1);
-   assert.equal(await entry.isVisible(),false);await shot('autohide');await hover();await entry.waitFor({state:'visible'});
+   await page.waitForFunction(()=>document.querySelector('#smarttube-player-entry').hasAttribute('data-fallback'));
+   assert.equal(await entry.isVisible(),true);assert.equal(await entry.getAttribute('tabindex'),'0');await shot('autohide');await hover();await entry.waitFor({state:'visible'});
   });
  }
  await check('Narrow player uses one accessible fallback, with scrollable tools within player',async()=>{
