@@ -1,4 +1,8 @@
-# Release checkpoint — 19 October 2026
+# 0.4.9 release preparation — 19 October 2026
+
+Settings installed-version display passed local coordinator non-author acceptance (one pass, no repairs). [0.4.9 release preparation](RELEASE_0.4.9.md) freezes that runtime and original ZIP. Separate release review, coordinator exact gate, publication and actual public downloaded update verification remain pending. Published 0.4.8 passed release/downloaded-distribution acceptance on 19 October; its stale Settings label remains a historical finding.
+
+## Historical 0.4.8 preparation checkpoint — superseded by publication acceptance
 
 Keyboard/compact-layout local scope passed coordinator non-author acceptance (one pass, no repairs). The next assigned gate is [0.4.8 release and update verification](RELEASE_0.4.8.md): exact source/package review and coordinator gate before publication, then actual public downloaded installation verification. No new feature or personal-profile work is commissioned. Published 0.4.7 remains available; historical checkpoints below retain their original status.
 
@@ -6,9 +10,9 @@ Keyboard/compact-layout local scope passed coordinator non-author acceptance (on
 
 The user selected an open-source, zero-additional-spending project, Brave as the primary browser, an extension first, and a Windows app later. The public source repository is `ShadowSwaps/smarttube-browser-extension`.
 
-Accepted local candidate, 19 October 2026: 0.4.8 improves keyboard reach/focus and compact-player tools, with focused fixtures and exact-package signed-out Brave acceptance. Coordinator non-author review passed (one pass, no repairs); release review and publication gates remain pending. This bounded UI item adds no native transport controls, backend or permissions. See [UI behavior](PLAYER_UI.md) and [validation](VALIDATION.md); published 0.4.7 remains unchanged.
+Historical local-candidate checkpoint, superseded by 0.4.8 publication acceptance: 0.4.8 improves keyboard reach/focus and compact-player tools, with focused fixtures and exact-package signed-out Brave acceptance. Coordinator non-author review passed (one pass, no repairs); release review and publication gates remain pending. This bounded UI item adds no native transport controls, backend or permissions. See [UI behavior](PLAYER_UI.md) and [validation](VALIDATION.md); published 0.4.7 remains unchanged.
 
-Current status, 19 October 2026: the 0.4.7 preview was published and its release/downloaded-distribution gates passed on 18 October. The [SponsorBlock live-service audit](SPONSORBLOCK_ACCEPTANCE.md) now has bounded actual-service author verification and passed coordinator non-author pass 1 (one pass, no repairs); final coordinator acceptance is recorded on 19 October. The dated release-preparation checkpoints below remain historical.
+Historical 0.4.7 status, 19 October 2026: the 0.4.7 preview was published and its release/downloaded-distribution gates passed on 18 October. The [SponsorBlock live-service audit](SPONSORBLOCK_ACCEPTANCE.md) now has bounded actual-service author verification and passed coordinator non-author pass 1 (one pass, no repairs); final coordinator acceptance is recorded on 19 October. The dated release-preparation checkpoints below remain historical.
 
 ## First extension version
 

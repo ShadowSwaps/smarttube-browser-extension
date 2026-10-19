@@ -1,11 +1,17 @@
 # Changelog
 
-## 0.4.8 preview — prepared 19 October 2026; release review pending
+## 0.4.9 preview — prepared 19 October 2026; release review pending
+
+- Display the installed manifest version in Settings; metadata lookup failure leaves controls usable.
+- Preserve runtime playback, settings/queue schema, permissions and dependencies. Local fix accepted at one non-author pass/no repairs. Release gates remain pending; see [release notes](docs/RELEASE_0.4.9.md).
+
+
+## 0.4.8 preview — published and accepted 19 October 2026
 
 - Keep one keyboard-reachable ST fallback when native chrome auto-hides, with Enter/Space, visible focus and natural Tab navigation.
 - Preserve focused tools while the entry moves; return keyboard Undo focus to Close when Undo disappears.
 - Reserve space beside the scrolling panel so the fallback cannot cover expanded controls in compact players.
-- Add keyboard/native-fullscreen fixture checks and exact-package signed-out Brave acceptance. Keyboard/layout coordinator non-author acceptance passed (one pass, no repairs). Release/source/package review and publication verification remain pending. Published 0.4.7 is unchanged; [coverage and limits](docs/VALIDATION.md) remain separate from review acceptance.
+- Add keyboard/native-fullscreen fixture checks and exact-package signed-out Brave acceptance. Keyboard/layout coordinator non-author acceptance passed (one pass, no repairs). Release/source/package review and actual public downloaded update verification passed on 19 October. The historical Settings label mismatch was retained as REL048-N01 and corrected by 0.4.9; [coverage and limits](docs/VALIDATION.md) remain separate from review acceptance.
 
 ## 0.4.7 preview — published and accepted 18 October 2026
 

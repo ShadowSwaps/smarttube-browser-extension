@@ -2,9 +2,9 @@
 
 A free, open-source YouTube viewing extension for **Brave**, Chrome, and Edge. Inspired by SmartTube, rebuilt for the browser around YouTube's existing player.
 
-**0.4.8 preview prepared, 19 October 2026.** Keyboard and compact-layout work passed coordinator non-author acceptance: one ST entry remains reachable during native auto-hide, focused tools survive entry movement, and narrow players reserve space beside scrolling tools. Release/source/package review and publication verification remain pending. See [0.4.8 installation, checksum, manual update and limits](docs/RELEASE_0.4.8.md).
+**0.4.9 preview prepared, 19 October 2026.** Settings now displays the installed manifest version. The local fix passed coordinator non-author acceptance (one pass, no repairs); release/source/package review, coordinator gate, publication and actual public downloaded update verification remain pending. See [0.4.9 installation, checksum, manual update and limits](docs/RELEASE_0.4.9.md).
 
-Published **0.4.7** remains available until 0.4.8 publication. Its release/source/package and downloaded-distribution acceptance passed on 18 October. The selected [SponsorBlock live-service/skip/Undo audit](docs/SPONSORBLOCK_ACCEPTANCE.md) passed coordinator non-author acceptance on 19 October; that dated audit used 0.4.7. Personal-profile/account/other-extension compatibility remains unverified.
+Published **0.4.8** remains available while 0.4.9 awaits release gates. Its source/package and actual downloaded-distribution/update verification passed on 19 October. The selected [SponsorBlock audit](docs/SPONSORBLOCK_ACCEPTANCE.md) remains dated 0.4.7 evidence for unchanged service code. Personal-profile/account/other-extension compatibility remains unverified.
 
 ## Features
 
@@ -20,13 +20,13 @@ This is an independent community project, not an official SmartTube port. YouTub
 
 ## Install in Brave
 
-1. For the prepared version, open the [0.4.8 preview release](https://github.com/ShadowSwaps/smarttube-browser-extension/releases/tag/v0.4.8) **after publication**, download `smarttube-browser-extension-0.4.8.zip` and `SHA256SUMS.txt`, [verify the checksum](docs/RELEASE_0.4.8.md#verify-the-download), and extract the ZIP. Until then use the [published 0.4.7 release](https://github.com/ShadowSwaps/smarttube-browser-extension/releases/tag/v0.4.7).
+1. After publication, open the [0.4.9 preview release](https://github.com/ShadowSwaps/smarttube-browser-extension/releases/tag/v0.4.9), download `smarttube-browser-extension-0.4.9.zip` and `SHA256SUMS.txt`, [verify the checksum](docs/RELEASE_0.4.9.md#verify-the-download), and extract into a dedicated folder containing `manifest.json`. Until then use the [published 0.4.8 release](https://github.com/ShadowSwaps/smarttube-browser-extension/releases/tag/v0.4.8).
 2. Open `brave://extensions` and enable **Developer mode**.
-3. Select **Load unpacked** and choose the extracted **extension** folder, which contains `manifest.json`.
+3. Select **Load unpacked** and choose the extracted folder, which contains `manifest.json`.
 4. Refresh any open YouTube tabs, then open a video on `https://www.youtube.com`.
 5. Pin SmartTube Browser from Brave's extensions menu to access the popup. Sponsor skipping is off until you enable it.
 
-Choose `extension` itself, not its `icons` subfolder. If Brave reports a missing manifest, return to the folder containing `manifest.json` and select that folder.
+For 0.4.9 the ZIP contains `manifest.json` at its root; choose your dedicated extraction folder, not its `icons` subfolder. If Brave reports a missing manifest, return to the folder containing `manifest.json` and select that folder.
 
 No build, npm install, paid store account, or signing certificate is needed to load the source. For Chrome use `chrome://extensions`; for Edge use `edge://extensions`. Brave is the primary validation target; see [validation status](docs/VALIDATION.md) for the exact tested scope.
 
@@ -44,7 +44,7 @@ Every new or reloaded video starts at **Normal(1×)** while SmartTube enhancemen
 
 Click **Cinema** in player tools or expand **Loop and Cinema** in the popup to dim the page around the player. Press **Escape** or click the dimmed page to exit for that tab. Settings can also start videos in cinema mode; dimming suspends during fullscreen. **Picture and distractions** in player tools makes labeled tab-only adjustments; Settings/popup save defaults locally. **Reset video filters** disables filtering and restores neutral values in the chosen surface. Every appearance feature starts off. Hiding uses known YouTube layout selectors and may need updates as the site changes.
 
-Updates are manual: preserve a copy of the old files, replace files in the same unpacked root with a verified version, select Reload on the existing extension entry, and refresh YouTube. Keeping the same entry is intended to retain local settings and queue; verify them after reload. Uninstalling removes local storage; a different unpacked root/ID may use separate storage. See [0.4.8 update and recovery steps](docs/RELEASE_0.4.8.md#manual-install-or-update).
+Updates are manual: preserve a copy of the old files, replace files in the same unpacked root with a verified version, select Reload on the existing extension entry, and refresh YouTube. Keeping the same entry is intended to retain local settings and queue; verify them after reload. Uninstalling removes local storage; a different unpacked root/ID may use separate storage. See [0.4.9 update and recovery steps](docs/RELEASE_0.4.9.md#manual-install-or-update).
 
 ## Develop locally
 

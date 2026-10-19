@@ -99,6 +99,10 @@ function buildAppearanceControls() {
   for (const [key,label] of Object.entries({hideComments:'Hide comments',hideRelated:'Hide related videos',hideChat:'Hide live chat',hideShorts:'Hide Shorts shelves',hideEndCards:'Hide end screens',hideInfoCards:'Hide info cards'})) addToggle(key,label);
 }
 async function init() {
+  try {
+    const versionLabel = $('#installed-version');
+    if (versionLabel) versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
+  } catch { /* Version metadata must not block settings or popup controls. */ }
   buildAppearanceControls();
   if (!popup) {
     const fieldset = $('#categories');
